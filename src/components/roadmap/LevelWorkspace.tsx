@@ -83,19 +83,19 @@ export default function LevelWorkspace({
       </div>
 
       {activeTab === "vocab" && (
-        <VocabTab words={progress.words} knownIds={knownIds} onToggleKnown={onToggleKnown} />
+        <VocabTab key={level} words={progress.words} knownIds={knownIds} onToggleKnown={onToggleKnown} />
       )}
       {activeTab === "listening" && (
-        <ListeningTab words={progress.words} onComplete={(pct) => onRecordScore(level, "listening", pct)} />
+        <ListeningTab key={level} words={progress.words} onComplete={(pct) => onRecordScore(level, "listening", pct)} />
       )}
       {activeTab === "speaking" && (
-        <SpeakingTab words={progress.words} onComplete={(pct) => onRecordScore(level, "speaking", pct)} />
+        <SpeakingTab key={level} words={progress.words} onComplete={(pct) => onRecordScore(level, "speaking", pct)} />
       )}
       {activeTab === "reading" && (
-        <ReadingTab test={readingTest} onComplete={(pct) => onRecordScore(level, "reading", pct)} />
+        <ReadingTab key={level} test={readingTest} onComplete={(pct) => onRecordScore(level, "reading", pct)} />
       )}
       {activeTab === "writing" && (
-        <WritingTab words={progress.words} onComplete={(pct) => onRecordScore(level, "writing", pct)} />
+        <WritingTab key={level} words={progress.words} onComplete={(pct) => onRecordScore(level, "writing", pct)} />
       )}
       {activeTab === "summary" && (
         <div className="mx-auto max-w-lg space-y-5 text-center">
