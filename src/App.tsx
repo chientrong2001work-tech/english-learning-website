@@ -1,5 +1,6 @@
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
+import Roadmap from "./components/roadmap/Roadmap";
 import Flashcards from "./components/Flashcards";
 import Quiz from "./components/Quiz";
 import GrammarTips from "./components/GrammarTips";
@@ -19,11 +20,14 @@ function App() {
     });
   }
 
+  const topicKnownCount = knownIds.filter((id) => vocabulary.some((w) => w.id === id)).length;
+
   return (
     <div className="min-h-screen bg-[#f7fbf9]">
-      <Navbar knownCount={knownIds.length} totalCount={vocabulary.length} />
+      <Navbar knownCount={topicKnownCount} totalCount={vocabulary.length} />
       <main>
         <Hero />
+        <Roadmap />
         <Flashcards knownIds={knownIds} onToggleKnown={handleToggleKnown} />
         <Quiz />
         <GrammarTips />

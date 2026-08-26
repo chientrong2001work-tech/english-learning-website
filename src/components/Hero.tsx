@@ -1,4 +1,4 @@
-import { Sparkles, BookOpen, ListChecks } from "lucide-react";
+import { Sparkles, Trophy, BookOpen } from "lucide-react";
 
 export default function Hero() {
   return (
@@ -9,33 +9,34 @@ export default function Hero() {
       <div className="relative mx-auto flex max-w-6xl flex-col items-center gap-6 px-6 py-20 text-center">
         <span className="inline-flex items-center gap-2 rounded-full bg-brand-100 px-4 py-1.5 text-sm font-semibold text-brand-700">
           <Sparkles className="h-4 w-4" />
-          Học từ vựng &amp; ngữ pháp mỗi ngày
+          Lộ trình CEFR từ A1 đến C2
         </span>
 
         <h1 className="max-w-3xl font-display text-4xl font-extrabold leading-tight text-brand-900 sm:text-5xl">
-          Học tiếng Anh dễ dàng cùng{" "}
+          Chinh phục tiếng Anh cùng{" "}
           <span className="text-brand-500">EngUp</span>
         </h1>
 
         <p className="max-w-xl text-lg text-brand-900/70">
-          Ghi nhớ từ vựng bằng flashcard, kiểm tra kiến thức với quiz nhanh, và
-          nắm chắc ngữ pháp cơ bản — tất cả miễn phí, ngay trên trình duyệt.
+          Học từ vựng theo từng cấp độ CEFR, vượt qua bài kiểm tra Nghe - Nói -
+          Đọc - Viết để mở khóa cấp tiếp theo — tất cả miễn phí, ngay trên
+          trình duyệt.
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
           <a
-            href="#flashcards"
+            href="#roadmap"
             className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-3 font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600"
           >
-            <BookOpen className="h-5 w-5" />
-            Bắt đầu học từ vựng
+            <Trophy className="h-5 w-5" />
+            Bắt đầu lộ trình CEFR
           </a>
           <a
-            href="#quiz"
+            href="#flashcards"
             className="inline-flex items-center gap-2 rounded-full border border-brand-300 bg-white px-6 py-3 font-semibold text-brand-700 transition hover:border-brand-400"
           >
-            <ListChecks className="h-5 w-5" />
-            Làm bài luyện tập
+            <BookOpen className="h-5 w-5" />
+            Luyện từ vựng tự do
           </a>
         </div>
       </div>
