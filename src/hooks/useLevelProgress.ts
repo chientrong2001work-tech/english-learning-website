@@ -52,6 +52,19 @@ export function useLevelProgress() {
     "engup-level-scores",
     createEmptyScores(),
   );
+  const [placementLevel, setPlacementLevel] = useLocalStorage<CEFRLevel | null>(
+    "engup-placement-level",
+    null,
+  );
+
+  function applyPlacement(level: CEFRLevel) {
+    setPlacementLevel((prev) => {
+      if (!prev) return level;
+      const prevIndex = levels.findIndex((l) => l.id === prev);
+      const nextIndex = levels.findIndex((l) => l.id === level);
+      return nextIndex > prevIndex ? level : prev;
+    });
+  }
 
   function toggleKnown(id: string, known: boolean) {
     setKnownIds((prev) => {
@@ -74,10 +87,12 @@ export function useLevelProgress() {
     });
   }
 
+  const placementIndex = placementLevel ? levels.findIndex((l) => l.id === placementLevel) : -1;
+
   const progress: LevelProgress[] = [];
   let previousPassed = true;
 
-  for (const info of levels) {
+  for (const [index, info] of levels.entries()) {
     const words = levelVocabulary.filter((w) => w.level === info.id);
     const knownCount = words.filter((w) => knownIds.includes(w.id)).length;
     const totalCount = words.length;
@@ -94,7 +109,7 @@ export function useLevelProgress() {
     };
     const allSkillsPassed = Object.values(skillsPassed).every(Boolean);
     const levelPassed = vocabMet && allSkillsPassed;
-    const unlocked = previousPassed;
+    const unlocked = previousPassed || index <= placementIndex;
 
     progress.push({
       level: info.id,
@@ -114,5 +129,5 @@ export function useLevelProgress() {
     previousPassed = levelPassed;
   }
 
-  return { knownIds, toggleKnown, recordScore, progress };
+  return { knownIds, toggleKnown, recordScore, progress, placementLevel, applyPlacement };
 }

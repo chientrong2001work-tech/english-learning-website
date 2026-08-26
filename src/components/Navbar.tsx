@@ -1,6 +1,7 @@
 import { GraduationCap, Flame } from "lucide-react";
 
 const navLinks = [
+  { href: "#placement", label: "Test trình độ" },
   { href: "#roadmap", label: "Lộ trình CEFR" },
   { href: "#flashcards", label: "Từ vựng" },
   { href: "#quiz", label: "Luyện tập" },

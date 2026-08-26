@@ -1,11 +1,17 @@
 import { useState } from "react";
 import LevelGrid from "./LevelGrid";
 import LevelWorkspace from "./LevelWorkspace";
-import { useLevelProgress } from "../../hooks/useLevelProgress";
-import type { CEFRLevel } from "../../types";
+import type { LevelProgress } from "../../hooks/useLevelProgress";
+import type { CEFRLevel, SkillId } from "../../types";
 
-export default function Roadmap() {
-  const { knownIds, toggleKnown, recordScore, progress } = useLevelProgress();
+interface RoadmapProps {
+  progress: LevelProgress[];
+  knownIds: string[];
+  onToggleKnown: (id: string, known: boolean) => void;
+  onRecordScore: (level: CEFRLevel, skill: SkillId, percent: number) => void;
+}
+
+export default function Roadmap({ progress, knownIds, onToggleKnown, onRecordScore }: RoadmapProps) {
   const [activeLevel, setActiveLevel] = useState<CEFRLevel | null>(null);
 
   const activeProgress = activeLevel ? progress.find((p) => p.level === activeLevel) ?? null : null;
@@ -35,8 +41,8 @@ export default function Roadmap() {
             level={activeProgress.level}
             progress={activeProgress}
             knownIds={knownIds}
-            onToggleKnown={toggleKnown}
-            onRecordScore={recordScore}
+            onToggleKnown={onToggleKnown}
+            onRecordScore={onRecordScore}
           />
         </div>
       )}
