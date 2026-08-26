@@ -44,10 +44,10 @@ export interface LevelVocabWord {
   id: string;
   level: CEFRLevel;
   word: string;
-  ipa: string;
+  ipa?: string;
   meaning: string;
-  example: string;
-  exampleMeaning: string;
+  example?: string;
+  exampleMeaning?: string;
 }
 
 export interface ReadingQuestion {

@@ -1,6 +1,7 @@
-import type { LevelVocabWord } from "../types";
+import type { CEFRLevel, LevelVocabWord } from "../types";
+import { bulkVocabByLevel } from "./bulkVocabulary";
 
-export const levelVocabulary: LevelVocabWord[] = [
+const curatedLevelVocabulary: LevelVocabWord[] = [
   // A1
   { id: "a1-1", level: "A1", word: "hello", ipa: "/həˈləʊ/", meaning: "xin chào", example: "Hello, how are you today?", exampleMeaning: "Xin chào, hôm nay bạn khỏe không?" },
   { id: "a1-2", level: "A1", word: "name", ipa: "/neɪm/", meaning: "tên", example: "What is your name?", exampleMeaning: "Tên bạn là gì?" },
@@ -372,4 +373,19 @@ export const levelVocabulary: LevelVocabWord[] = [
   { id: "c2-58", level: "C2", word: "aberrant", ipa: "/æˈberənt/", meaning: "lệch lạc, khác thường", example: "The scientist noted aberrant behavior in the samples.", exampleMeaning: "Nhà khoa học ghi nhận hành vi khác thường trong các mẫu vật." },
   { id: "c2-59", level: "C2", word: "acumen", ipa: "/ˈækjumən/", meaning: "sự nhạy bén, tài phán đoán", example: "Her business acumen helped the company grow.", exampleMeaning: "Sự nhạy bén trong kinh doanh của cô ấy đã giúp công ty phát triển." },
   { id: "c2-60", level: "C2", word: "fastidious", ipa: "/fæˈstɪdiəs/", meaning: "khó tính, kỹ tính", example: "He is fastidious about cleanliness.", exampleMeaning: "Anh ấy rất kỹ tính về sự sạch sẽ." },
+];
+
+function buildBulkVocabulary(): LevelVocabWord[] {
+  const words: LevelVocabWord[] = [];
+  (Object.keys(bulkVocabByLevel) as CEFRLevel[]).forEach((level) => {
+    bulkVocabByLevel[level].forEach(([word, meaning], index) => {
+      words.push({ id: `${level.toLowerCase()}-x${index + 1}`, level, word, meaning });
+    });
+  });
+  return words;
+}
+
+export const levelVocabulary: LevelVocabWord[] = [
+  ...curatedLevelVocabulary,
+  ...buildBulkVocabulary(),
 ];

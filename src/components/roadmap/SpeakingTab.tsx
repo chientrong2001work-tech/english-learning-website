@@ -119,7 +119,7 @@ export default function SpeakingTab({ words, onComplete }: SpeakingTabProps) {
                 <Volume2 className="h-4 w-4" />
               </button>
             </div>
-            <p className="text-brand-900/40">{item.ipa}</p>
+            {item.ipa && <p className="text-brand-900/40">{item.ipa}</p>}
 
             {supported ? (
               <>
