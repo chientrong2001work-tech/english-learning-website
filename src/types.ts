@@ -1,4 +1,12 @@
-export type CategoryId = "everyday" | "travel" | "work" | "food";
+export type CategoryId =
+  | "everyday"
+  | "travel"
+  | "work"
+  | "food"
+  | "family"
+  | "shopping"
+  | "health"
+  | "technology";
 
 export interface Category {
   id: CategoryId;
