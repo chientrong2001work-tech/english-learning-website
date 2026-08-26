@@ -15,7 +15,7 @@ export default function LevelGrid({ progress, activeLevel, onSelectLevel }: Leve
       {levels.map((info) => {
         const p = progress.find((item) => item.level === info.id)!;
         const isActive = activeLevel === info.id;
-        const percent = p.totalCount ? Math.round((p.knownCount / p.totalCount) * 100) : 0;
+        const percent = Math.round(p.vocabRatio * 100);
 
         return (
           <button
@@ -56,7 +56,7 @@ export default function LevelGrid({ progress, activeLevel, onSelectLevel }: Leve
                 />
               </div>
               <p className={`text-xs ${isActive ? "text-white/80" : "text-brand-900/50"}`}>
-                Từ vựng: {p.knownCount}/{p.totalCount}
+                Từ vựng: {p.knownCount}/{p.vocabTarget} mục tiêu (kho {p.totalCount} từ)
                 {" · "}
                 {(["listening", "speaking", "reading", "writing"] as const).filter((s) => p.skillsPassed[s]).length}/4 kỹ năng đạt
               </p>

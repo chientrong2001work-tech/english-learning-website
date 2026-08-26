@@ -3,8 +3,18 @@ import { levels } from "../data/levels";
 import { levelVocabulary } from "../data/levelVocabulary";
 import type { CEFRLevel, LevelScoresMap, LevelSkillScores, LevelVocabWord, SkillId } from "../types";
 
-export const VOCAB_REQUIRED_RATIO = 0.7;
 export const SKILL_PASS_RATIO = 0.6;
+
+// Fixed number of words a learner must know to pass each level's vocabulary
+// requirement, instead of a percentage of the (now very large) word pool.
+export const VOCAB_TARGET_BY_LEVEL: Record<CEFRLevel, number> = {
+  A1: 400,
+  A2: 400,
+  B1: 400,
+  B2: 400,
+  C1: 45,
+  C2: 45,
+};
 
 function emptySkillScores(): LevelSkillScores {
   return { listening: null, speaking: null, reading: null, writing: null };
@@ -26,6 +36,7 @@ export interface LevelProgress {
   words: LevelVocabWord[];
   knownCount: number;
   totalCount: number;
+  vocabTarget: number;
   vocabRatio: number;
   vocabMet: boolean;
   scores: LevelSkillScores;
@@ -70,8 +81,9 @@ export function useLevelProgress() {
     const words = levelVocabulary.filter((w) => w.level === info.id);
     const knownCount = words.filter((w) => knownIds.includes(w.id)).length;
     const totalCount = words.length;
-    const vocabRatio = totalCount ? knownCount / totalCount : 0;
-    const vocabMet = vocabRatio >= VOCAB_REQUIRED_RATIO;
+    const vocabTarget = Math.min(VOCAB_TARGET_BY_LEVEL[info.id], totalCount);
+    const vocabRatio = vocabTarget ? Math.min(knownCount / vocabTarget, 1) : 0;
+    const vocabMet = knownCount >= vocabTarget;
     const scores = levelScores[info.id] ?? emptySkillScores();
 
     const skillsPassed: Record<SkillId, boolean> = {
@@ -89,6 +101,7 @@ export function useLevelProgress() {
       words,
       knownCount,
       totalCount,
+      vocabTarget,
       vocabRatio,
       vocabMet,
       scores,

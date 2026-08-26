@@ -7,7 +7,7 @@ import ReadingTab from "./ReadingTab";
 import WritingTab from "./WritingTab";
 import { levels } from "../../data/levels";
 import { readingTests } from "../../data/readingTests";
-import { SKILL_PASS_RATIO, VOCAB_REQUIRED_RATIO, type LevelProgress } from "../../hooks/useLevelProgress";
+import { SKILL_PASS_RATIO, type LevelProgress } from "../../hooks/useLevelProgress";
 import type { CEFRLevel, SkillId } from "../../types";
 
 type TabId = "vocab" | "listening" | "speaking" | "reading" | "writing" | "summary";
@@ -56,7 +56,7 @@ export default function LevelWorkspace({
           <p className="text-sm text-brand-900/60">{info.description}</p>
         </div>
         <div className="rounded-full bg-brand-50 px-4 py-1.5 text-sm font-semibold text-brand-700">
-          Từ vựng: {progress.knownCount}/{progress.totalCount}
+          Từ vựng: {progress.knownCount}/{progress.vocabTarget} mục tiêu (kho {progress.totalCount} từ)
         </div>
       </div>
 
@@ -100,8 +100,8 @@ export default function LevelWorkspace({
       {activeTab === "summary" && (
         <div className="mx-auto max-w-lg space-y-5 text-center">
           <p className="text-sm text-brand-900/60">
-            Để mở khóa cấp tiếp theo, bạn cần thuộc ít nhất {Math.round(VOCAB_REQUIRED_RATIO * 100)}% từ vựng và đạt
-            tối thiểu {Math.round(SKILL_PASS_RATIO * 100)}% ở cả 4 kỹ năng.
+            Để mở khóa cấp tiếp theo, bạn cần thuộc ít nhất {progress.vocabTarget} từ (trong kho {progress.totalCount}
+            {" "}từ của cấp này) và đạt tối thiểu {Math.round(SKILL_PASS_RATIO * 100)}% ở cả 4 kỹ năng.
           </p>
 
           <div className="space-y-2 text-left">
@@ -109,7 +109,7 @@ export default function LevelWorkspace({
               <span className="font-medium text-brand-900">Từ vựng</span>
               <span className={`inline-flex items-center gap-1.5 font-semibold ${progress.vocabMet ? "text-brand-600" : "text-red-500"}`}>
                 {progress.vocabMet ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                {progress.knownCount}/{progress.totalCount} ({Math.round(progress.vocabRatio * 100)}%)
+                {progress.knownCount}/{progress.vocabTarget} ({Math.round(progress.vocabRatio * 100)}%)
               </span>
             </div>
             {(["listening", "speaking", "reading", "writing"] as SkillId[]).map((skill) => (
