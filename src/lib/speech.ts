@@ -52,3 +52,33 @@ export function createSpeechRecognizer(): MinimalSpeechRecognition | null {
   recognition.maxAlternatives = 1;
   return recognition;
 }
+
+export interface ContinuousRecognitionResults {
+  length: number;
+  [index: number]: { [index: number]: { transcript: string } };
+}
+
+export interface ContinuousSpeechRecognition {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  start: () => void;
+  stop: () => void;
+  onresult: ((event: { results: ContinuousRecognitionResults }) => void) | null;
+  onerror: ((event: { error: string }) => void) | null;
+  onend: (() => void) | null;
+}
+
+// Used to transcribe a longer spoken answer (multiple sentences) as it's
+// recorded, unlike createSpeechRecognizer() which only returns one short
+// final result — needed to score speaking answers on actual content.
+export function createContinuousRecognizer(): ContinuousSpeechRecognition | null {
+  if (typeof window === "undefined") return null;
+  const Ctor = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!Ctor) return null;
+  const recognition = new Ctor() as unknown as ContinuousSpeechRecognition;
+  recognition.lang = "en-US";
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  return recognition;
+}

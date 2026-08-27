@@ -1,13 +1,21 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AlertTriangle, Check, Mic, Play, RotateCcw, Square } from "lucide-react";
 import { useAudioRecorder } from "../../lib/audioRecorder";
+import { createContinuousRecognizer, type ContinuousSpeechRecognition } from "../../lib/speech";
+import { scoreEnglishResponse } from "../../lib/textScoring";
 import { placementSpeakingQuestions } from "../../data/placementSpeaking";
+
+const MIN_WORDS_FOR_FULL_SCORE = 25;
 
 export interface SpeakingRecording {
   id: string;
   prompt: string;
   audioUrl: string;
   durationSec: number;
+  transcript: string;
+  score: number | null;
+  band: string | null;
+  feedback: string[];
 }
 
 interface PlacementSpeakingProps {
@@ -17,23 +25,70 @@ interface PlacementSpeakingProps {
 export default function PlacementSpeaking({ onComplete }: PlacementSpeakingProps) {
   const [index, setIndex] = useState(0);
   const [recordings, setRecordings] = useState<SpeakingRecording[]>([]);
+  const [transcript, setTranscript] = useState("");
   const recorder = useAudioRecorder();
+  const recognizerRef = useRef<ContinuousSpeechRecognition | null>(null);
 
   const question = placementSpeakingQuestions[index];
+  const scored = recorder.status === "recorded" && transcript.trim() ? scoreEnglishResponse(transcript, MIN_WORDS_FOR_FULL_SCORE) : null;
+
+  function startRecording() {
+    setTranscript("");
+    const recognizer = createContinuousRecognizer();
+    recognizerRef.current = recognizer;
+    if (recognizer) {
+      recognizer.onresult = (event) => {
+        let text = "";
+        for (let i = 0; i < event.results.length; i++) {
+          text += event.results[i][0].transcript + " ";
+        }
+        setTranscript(text.trim());
+      };
+      recognizer.onerror = () => {};
+      recognizer.onend = () => {};
+      try {
+        recognizer.start();
+      } catch {
+        // ignore — recording still proceeds without a live transcript
+      }
+    }
+    recorder.start();
+  }
+
+  function stopRecording() {
+    recognizerRef.current?.stop();
+    recorder.stop();
+  }
 
   function confirmAndContinue() {
     if (!recorder.audioUrl) return;
+    const finalScore = transcript.trim() ? scoreEnglishResponse(transcript, MIN_WORDS_FOR_FULL_SCORE) : null;
     const next = [
       ...recordings,
-      { id: question.id, prompt: question.prompt, audioUrl: recorder.audioUrl, durationSec: recorder.durationSec },
+      {
+        id: question.id,
+        prompt: question.prompt,
+        audioUrl: recorder.audioUrl,
+        durationSec: recorder.durationSec,
+        transcript: transcript.trim(),
+        score: finalScore?.score ?? null,
+        band: finalScore?.band ?? null,
+        feedback: finalScore?.feedback ?? [],
+      },
     ];
     setRecordings(next);
     recorder.reset();
+    setTranscript("");
     if (index + 1 < placementSpeakingQuestions.length) {
       setIndex((i) => i + 1);
     } else {
       onComplete(next);
     }
+  }
+
+  function reRecord() {
+    recorder.reset();
+    setTranscript("");
   }
 
   function skipQuestion() {
@@ -80,7 +135,7 @@ export default function PlacementSpeaking({ onComplete }: PlacementSpeakingProps
 
           {recorder.status === "idle" && (
             <button
-              onClick={recorder.start}
+              onClick={startRecording}
               className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-3 font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600"
             >
               <Mic className="h-5 w-5" />
@@ -94,7 +149,7 @@ export default function PlacementSpeaking({ onComplete }: PlacementSpeakingProps
 
           {recorder.status === "recording" && (
             <button
-              onClick={recorder.stop}
+              onClick={stopRecording}
               className="inline-flex items-center gap-2 rounded-full bg-red-500 px-6 py-3 font-semibold text-white shadow-lg shadow-red-500/30 transition hover:bg-red-600"
             >
               <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-white" />
@@ -110,7 +165,7 @@ export default function PlacementSpeaking({ onComplete }: PlacementSpeakingProps
                 {recorder.errorMessage}
               </p>
               <button
-                onClick={recorder.start}
+                onClick={startRecording}
                 className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-3 font-semibold text-white transition hover:bg-brand-600"
               >
                 <Mic className="h-5 w-5" />
@@ -126,9 +181,36 @@ export default function PlacementSpeaking({ onComplete }: PlacementSpeakingProps
                 Đã ghi âm ({recorder.durationSec}s) — nghe lại bên dưới
               </p>
               <audio controls src={recorder.audioUrl} className="w-full max-w-sm" />
+
+              {scored ? (
+                <div className="w-full rounded-2xl bg-brand-50 p-4 text-left">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">
+                    Văn bản nhận diện được
+                  </p>
+                  <p className="mt-1 text-sm italic text-brand-900/70">"{transcript}"</p>
+                  <p className="mt-3 font-display font-bold text-brand-900">
+                    Điểm: {scored.score}/100 · Mức: {scored.band}
+                  </p>
+                  <ul className="mt-2 space-y-1 text-sm text-brand-900/70">
+                    {scored.feedback.map((f) => (
+                      <li key={f}>• {f}</li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-xs text-brand-900/40">
+                    Chấm điểm tự động dựa trên nội dung được nhận diện từ giọng nói — không thay thế giám khảo
+                    thật.
+                  </p>
+                </div>
+              ) : (
+                <p className="max-w-sm text-center text-xs text-brand-900/40">
+                  Trình duyệt này không nhận diện được nội dung giọng nói để chấm điểm tự động, nhưng bản ghi âm
+                  vẫn được lưu để bạn tự nghe lại.
+                </p>
+              )}
+
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <button
-                  onClick={recorder.reset}
+                  onClick={reRecord}
                   className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-5 py-2.5 font-semibold text-brand-700 transition hover:bg-brand-50"
                 >
                   <RotateCcw className="h-4 w-4" />

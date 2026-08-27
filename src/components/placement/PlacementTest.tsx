@@ -6,7 +6,7 @@ import { placementListening } from "../../data/placementQuiz";
 import { SKILL_PASS_RATIO } from "../../hooks/useLevelProgress";
 import { speak } from "../../lib/speech";
 import type { CEFRLevel } from "../../types";
-import PlacementWriting from "./PlacementWriting";
+import PlacementWriting, { type WritingResult } from "./PlacementWriting";
 import PlacementSpeaking, { type SpeakingRecording } from "./PlacementSpeaking";
 
 const READING_QUESTIONS_PER_LEVEL = 2;
@@ -74,7 +74,7 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
   const [correctByLevel, setCorrectByLevel] = useState<Record<CEFRLevel, number>>({} as Record<CEFRLevel, number>);
   const [finalLevel, setFinalLevel] = useState<CEFRLevel | null>(null);
   const [levelResults, setLevelResults] = useState<LevelResult[]>([]);
-  const [writingAnswer, setWritingAnswer] = useState("");
+  const [writingResult, setWritingResult] = useState<WritingResult | null>(null);
   const [speakingRecordings, setSpeakingRecordings] = useState<SpeakingRecording[]>([]);
 
   const currentItem = quiz[index];
@@ -93,7 +93,7 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
     setCorrectByLevel({} as Record<CEFRLevel, number>);
     setFinalLevel(null);
     setLevelResults([]);
-    setWritingAnswer("");
+    setWritingResult(null);
     setSpeakingRecordings([]);
     setStage("testing");
   }
@@ -115,8 +115,8 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
     setStage("writing");
   }
 
-  function handleWritingComplete(answer: string) {
-    setWritingAnswer(answer);
+  function handleWritingComplete(result: WritingResult) {
+    setWritingResult(result);
     setStage("speaking");
   }
 
@@ -253,12 +253,26 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
 
           <div className="mx-auto mt-6 max-w-md space-y-4 text-left">
             <div className="rounded-xl border border-brand-100 p-4">
-              <p className="mb-2 flex items-center gap-2 font-semibold text-brand-900">
-                <PenLine className="h-4 w-4 text-brand-500" />
-                Phần Viết
+              <p className="mb-2 flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2 font-semibold text-brand-900">
+                  <PenLine className="h-4 w-4 text-brand-500" />
+                  Phần Viết
+                </span>
+                {writingResult && (
+                  <span className="text-sm font-semibold text-brand-600">
+                    {writingResult.score}/100 · {writingResult.band}
+                  </span>
+                )}
               </p>
-              {writingAnswer.trim() ? (
-                <p className="text-sm text-brand-900/70">{writingAnswer}</p>
+              {writingResult ? (
+                <>
+                  <p className="text-sm text-brand-900/70">{writingResult.answer}</p>
+                  <ul className="mt-2 space-y-1 text-xs text-brand-900/50">
+                    {writingResult.feedback.map((f) => (
+                      <li key={f}>• {f}</li>
+                    ))}
+                  </ul>
+                </>
               ) : (
                 <p className="text-sm text-brand-900/40">Chưa có bài viết.</p>
               )}
@@ -270,11 +284,32 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
                 Phần Nói ({speakingRecordings.length}/3 câu đã ghi âm)
               </p>
               {speakingRecordings.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {speakingRecordings.map((rec) => (
-                    <div key={rec.id}>
-                      <p className="mb-1 text-sm text-brand-900/70">{rec.prompt}</p>
+                    <div key={rec.id} className="border-t border-brand-50 pt-3 first:border-0 first:pt-0">
+                      <div className="mb-1 flex items-center justify-between gap-2">
+                        <p className="text-sm text-brand-900/70">{rec.prompt}</p>
+                        {rec.score !== null && (
+                          <span className="shrink-0 text-sm font-semibold text-brand-600">
+                            {rec.score}/100 · {rec.band}
+                          </span>
+                        )}
+                      </div>
                       <audio controls src={rec.audioUrl} className="w-full" />
+                      {rec.transcript ? (
+                        <p className="mt-1.5 text-xs italic text-brand-900/50">"{rec.transcript}"</p>
+                      ) : (
+                        <p className="mt-1.5 text-xs text-brand-900/40">
+                          Không nhận diện được nội dung để chấm điểm tự động.
+                        </p>
+                      )}
+                      {rec.feedback.length > 0 && (
+                        <ul className="mt-1 space-y-0.5 text-xs text-brand-900/50">
+                          {rec.feedback.map((f) => (
+                            <li key={f}>• {f}</li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   ))}
                 </div>
