@@ -7,6 +7,7 @@ import {
   Mic,
   MessageCircle,
   Send,
+  Sparkles,
   Square,
   Volume2,
 } from "lucide-react";
@@ -20,6 +21,11 @@ import {
 } from "../lib/speech";
 
 const API_URL = import.meta.env.VITE_SPEAKING_ROOM_API_URL as string | undefined;
+
+// How long to wait after the learner stops speaking before auto-sending
+// their answer, so the conversation flows hands-free instead of requiring a
+// manual "stop recording" tap every turn.
+const SILENCE_AUTO_SEND_MS = 1500;
 
 const TOPIC_PRESETS = ["Du lịch", "Công việc", "Sở thích", "Ẩm thực", "Công nghệ", "Cuộc sống hàng ngày"];
 
@@ -42,7 +48,7 @@ const KICKOFF_MESSAGE =
   "[The learner just joined the conversation. Greet them warmly in English in 1-2 sentences and ask an opening question related to the topic. This bracketed text is a system instruction, not something the learner said — do not add a correction for it.]";
 
 export default function SpeakingRoomPage() {
-  const [phase, setPhase] = useState<"setup" | "chat">("setup");
+  const [phase, setPhase] = useState<"setup" | "chat" | "summary">("setup");
   const [topic, setTopic] = useState(TOPIC_PRESETS[0]);
   const [customTopic, setCustomTopic] = useState("");
   const [level, setLevel] = useState<CEFRLevel>("B1");
@@ -53,8 +59,18 @@ export default function SpeakingRoomPage() {
   const [draft, setDraft] = useState("");
   const [isRecording, setIsRecording] = useState(false);
 
+  const [summary, setSummary] = useState<string | null>(null);
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+
   const recognizerRef = useRef<ContinuousSpeechRecognition | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const silenceTimerRef = useRef<number | null>(null);
+  // Guards the hands-free auto-listen chain (speak -> onEnd -> mic) so it
+  // doesn't keep firing after the learner has already ended the session.
+  const isConversationActiveRef = useRef(false);
+  const messagesRef = useRef<ChatMessage[]>([]);
+  messagesRef.current = messages;
 
   const effectiveTopic = customTopic.trim() || topic;
   const speechSupported = isSpeechRecognitionSupported();
@@ -67,8 +83,30 @@ export default function SpeakingRoomPage() {
     return () => {
       recognizerRef.current?.stop();
       stopSpeech();
+      clearSilenceTimer();
     };
   }, []);
+
+  function clearSilenceTimer() {
+    if (silenceTimerRef.current !== null) {
+      window.clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+  }
+
+  // Best-effort: request mic permission directly inside the "Bắt đầu trò
+  // chuyện" click so the browser treats it as a user gesture. Without this,
+  // the first auto-start of the recognizer (which happens later, inside a
+  // TTS onEnd callback) can silently fail to prompt for permission.
+  async function primeMicPermission() {
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((t) => t.stop());
+    } catch {
+      // Ignore — the learner can still use the mic button manually, or type.
+    }
+  }
 
   async function sendToApi(history: ChatMessage[]) {
     if (!API_URL) {
@@ -82,6 +120,7 @@ export default function SpeakingRoomPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          mode: "chat",
           topic: effectiveTopic,
           level,
           messages: history.map((m) => ({ role: m.role, content: m.content })),
@@ -90,7 +129,9 @@ export default function SpeakingRoomPage() {
       if (!res.ok) throw new Error(`API error ${res.status}`);
       const data = (await res.json()) as { reply: string; correction: string | null };
       setMessages((prev) => [...prev, { role: "assistant", content: data.reply, correction: data.correction }]);
-      speak(data.reply);
+      speak(data.reply, "en-US", () => {
+        if (isConversationActiveRef.current && speechSupported) startRecording();
+      });
     } catch {
       setError("Không thể kết nối tới AI ngay lúc này. Vui lòng thử lại.");
     } finally {
@@ -99,9 +140,11 @@ export default function SpeakingRoomPage() {
   }
 
   function startConversation() {
+    void primeMicPermission();
     setMessages([]);
     setError(null);
     setPhase("chat");
+    isConversationActiveRef.current = true;
     if (!API_URL) {
       setError("Chưa cấu hình API cho Phòng Speaking ảo.");
       return;
@@ -109,11 +152,48 @@ export default function SpeakingRoomPage() {
     void sendToApi([{ role: "user", content: KICKOFF_MESSAGE }]);
   }
 
-  function endConversation() {
+  async function endConversation() {
     recognizerRef.current?.stop();
     stopSpeech();
+    clearSilenceTimer();
     setIsRecording(false);
+    isConversationActiveRef.current = false;
+
+    if (!API_URL || messagesRef.current.length === 0) {
+      setPhase("setup");
+      return;
+    }
+
+    setPhase("summary");
+    setSummary(null);
+    setSummaryError(null);
+    setIsSummaryLoading(true);
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "summary",
+          topic: effectiveTopic,
+          level,
+          messages: messagesRef.current.map((m) => ({ role: m.role, content: m.content })),
+        }),
+      });
+      if (!res.ok) throw new Error(`API error ${res.status}`);
+      const data = (await res.json()) as { summary: string };
+      setSummary(data.summary);
+    } catch {
+      setSummaryError("Không thể tạo nhận xét lúc này. Vui lòng thử lại sau.");
+    } finally {
+      setIsSummaryLoading(false);
+    }
+  }
+
+  function backToSetup() {
     setPhase("setup");
+    setMessages([]);
+    setSummary(null);
+    setSummaryError(null);
   }
 
   function startRecording() {
@@ -121,12 +201,21 @@ export default function SpeakingRoomPage() {
     recognizerRef.current = recognizer;
     if (!recognizer) return;
     setDraft("");
+    clearSilenceTimer();
     recognizer.onresult = (event) => {
       let text = "";
       for (let i = 0; i < event.results.length; i++) {
         text += event.results[i][0].transcript + " ";
       }
-      setDraft(text.trim());
+      const trimmed = text.trim();
+      setDraft(trimmed);
+
+      clearSilenceTimer();
+      if (trimmed) {
+        silenceTimerRef.current = window.setTimeout(() => {
+          handleSend(trimmed);
+        }, SILENCE_AUTO_SEND_MS);
+      }
     };
     recognizer.onerror = () => setIsRecording(false);
     recognizer.onend = () => setIsRecording(false);
@@ -140,11 +229,12 @@ export default function SpeakingRoomPage() {
 
   function stopRecording() {
     recognizerRef.current?.stop();
+    clearSilenceTimer();
     setIsRecording(false);
   }
 
-  function handleSend() {
-    const text = draft.trim();
+  function handleSend(overrideText?: string) {
+    const text = (overrideText ?? draft).trim();
     if (!text || isSending) return;
     stopRecording();
     const nextMessages: ChatMessage[] = [...messages, { role: "user", content: text }];
@@ -166,7 +256,7 @@ export default function SpeakingRoomPage() {
           </a>
           {phase === "chat" && (
             <button
-              onClick={endConversation}
+              onClick={() => void endConversation()}
               className="rounded-full border border-brand-200 px-4 py-1.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50"
             >
               Kết thúc trò chuyện
@@ -186,8 +276,10 @@ export default function SpeakingRoomPage() {
               Phòng Speaking ảo
             </h1>
             <p className="mx-auto mt-3 max-w-xl text-brand-900/70">
-              Nói chuyện tự do bằng tiếng Anh với AI theo chủ đề bạn chọn. AI sẽ lắng nghe, trả lời lại và chỉ ra
-              lỗi ngữ pháp hoặc cấu trúc câu nếu bạn nói sai, kèm gợi ý sửa bằng tiếng Việt.
+              Nói chuyện tự do bằng tiếng Anh với AI theo chủ đề bạn chọn — AI tự nghe, tự trả lời liên tục như một
+              cuộc gọi thật, không cần bấm nút mỗi lượt. AI sẽ chỉ ra lỗi ngữ pháp hoặc cấu trúc câu nếu bạn nói
+              sai, kèm gợi ý sửa bằng tiếng Việt. Nếu bí câu trả lời, cứ gõ hoặc nói "hướng dẫn tôi trả lời" là AI
+              sẽ gợi ý cho bạn.
             </p>
           </div>
 
@@ -255,6 +347,37 @@ export default function SpeakingRoomPage() {
               Bắt đầu trò chuyện
             </button>
           </div>
+        </section>
+      ) : phase === "summary" ? (
+        <section className="mx-auto w-full max-w-3xl flex-1 px-6 py-16">
+          <div className="mb-8 text-center">
+            <span className="inline-flex items-center gap-2 rounded-full bg-brand-100 px-4 py-1.5 text-sm font-semibold text-brand-700">
+              <Sparkles className="h-4 w-4" />
+              Nhận xét buổi luyện nói
+            </span>
+            <h1 className="mt-4 font-display text-3xl font-extrabold text-brand-900 sm:text-4xl">
+              Kết quả buổi trò chuyện
+            </h1>
+          </div>
+
+          <div className="rounded-3xl border border-brand-100 bg-white p-6 shadow-lg shadow-brand-900/5">
+            {isSummaryLoading && (
+              <div className="flex items-center justify-center gap-2 py-10 text-brand-600">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Đang tổng hợp nhận xét...
+              </div>
+            )}
+            {summaryError && <p className="text-center text-sm font-semibold text-red-500">{summaryError}</p>}
+            {summary && <div className="whitespace-pre-line text-sm leading-relaxed text-brand-900/80">{summary}</div>}
+          </div>
+
+          <button
+            onClick={backToSetup}
+            className="mt-8 flex w-full items-center justify-center gap-2 rounded-full bg-brand-500 px-6 py-3.5 font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600"
+          >
+            <MessageCircle className="h-5 w-5" />
+            Luyện chủ đề khác
+          </button>
         </section>
       ) : (
         <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-6">
@@ -343,7 +466,7 @@ export default function SpeakingRoomPage() {
                   </button>
                 ))}
               <button
-                onClick={handleSend}
+                onClick={() => handleSend()}
                 disabled={!draft.trim() || isSending}
                 className="shrink-0 rounded-full bg-brand-500 p-3.5 text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Gửi"
@@ -351,7 +474,11 @@ export default function SpeakingRoomPage() {
                 <Send className="h-5 w-5" />
               </button>
             </div>
-            {isRecording && <p className="mt-2 text-center text-xs text-brand-900/40">Đang nghe... nói bằng tiếng Anh</p>}
+            {isRecording && (
+              <p className="mt-2 text-center text-xs text-brand-900/40">
+                Đang nghe... nói xong, dừng lại một chút sẽ tự động gửi
+              </p>
+            )}
           </div>
         </section>
       )}

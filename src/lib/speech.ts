@@ -47,14 +47,24 @@ function pickClearVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | 
 // at the start of playback.
 const RESTART_DELAY_MS = 30;
 
-export function speak(text: string, lang = "en-US") {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+// onEnd, when passed, fires once playback finishes (or immediately if TTS
+// isn't supported, or if playback errors) — used to chain a follow-up action
+// like re-opening the mic for a hands-free back-and-forth conversation.
+export function speak(text: string, lang = "en-US", onEnd?: () => void) {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+    onEnd?.();
+    return;
+  }
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = lang;
   utterance.rate = 0.9;
   const voice = pickClearVoice(getEnglishVoices());
   if (voice) utterance.voice = voice;
+  if (onEnd) {
+    utterance.onend = onEnd;
+    utterance.onerror = onEnd;
+  }
   window.setTimeout(() => window.speechSynthesis.speak(utterance), RESTART_DELAY_MS);
 }
 
