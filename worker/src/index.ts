@@ -179,10 +179,18 @@ export default {
 
     try {
       if (parsed.mode === "summary") {
+        // Gemini's generateContent rejects a conversation whose last turn is
+        // "model" — it only accepts a request that ends on a user turn. The
+        // transcript we're reviewing usually ends with the AI's own reply,
+        // so append a synthetic final user turn asking for the write-up.
+        const summaryMessages: ChatMessage[] = [
+          ...recentMessages,
+          { role: "user", content: "[Please write the Vietnamese assessment now, following the instructions above.]" },
+        ];
         const rawText = await callGemini(
           env.GEMINI_API_KEY,
           buildSummaryPrompt(parsed.topic, parsed.level),
-          recentMessages,
+          summaryMessages,
         );
         return jsonResponse({ summary: rawText.trim() }, 200, allowedOrigin);
       }
