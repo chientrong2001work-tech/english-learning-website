@@ -6,7 +6,7 @@ export interface Env {
 // Gemini model with a free tier as of this writing — check
 // https://ai.google.dev/pricing for the current free-tier model lineup if
 // this one stops being free or gets deprecated, and swap the string below.
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "gemini-3.6-flash";
 
 type ChatRole = "user" | "assistant";
 
