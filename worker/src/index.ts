@@ -1,9 +1,12 @@
-import Anthropic from "@anthropic-ai/sdk";
-
 export interface Env {
-  ANTHROPIC_API_KEY: string;
+  GEMINI_API_KEY: string;
   ALLOWED_ORIGIN: string;
 }
+
+// Gemini model with a free tier as of this writing — check
+// https://ai.google.dev/pricing for the current free-tier model lineup if
+// this one stops being free or gets deprecated, and swap the string below.
+const GEMINI_MODEL = "gemini-2.5-flash";
 
 type ChatRole = "user" | "assistant";
 
@@ -96,6 +99,36 @@ function splitReplyAndCorrection(rawText: string): { reply: string; correction: 
   return { reply, correction: correction.length > 0 ? correction : null };
 }
 
+interface GeminiResponse {
+  candidates?: { content?: { parts?: { text?: string }[] } }[];
+}
+
+async function callGemini(apiKey: string, systemPrompt: string, messages: ChatMessage[]): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+  const body = {
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    contents: messages.map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    })),
+    generationConfig: { maxOutputTokens: 500 },
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Gemini API error ${res.status}: ${await res.text()}`);
+  }
+
+  const data = (await res.json()) as GeminiResponse;
+  const parts = data.candidates?.[0]?.content?.parts ?? [];
+  return parts.map((p) => p.text ?? "").join("");
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const allowedOrigin = env.ALLOWED_ORIGIN;
@@ -122,25 +155,17 @@ export default {
 
     const recentMessages = parsed.messages.slice(-MAX_HISTORY_MESSAGES);
 
-    const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
-
     try {
-      const response = await client.messages.create({
-        model: "claude-opus-5",
-        max_tokens: 500,
-        system: buildSystemPrompt(parsed.topic, parsed.level),
-        messages: recentMessages.map((m) => ({ role: m.role, content: m.content })),
-      });
-
-      const textBlocks = response.content.filter(
-        (block): block is Anthropic.TextBlock => block.type === "text",
+      const rawText = await callGemini(
+        env.GEMINI_API_KEY,
+        buildSystemPrompt(parsed.topic, parsed.level),
+        recentMessages,
       );
-      const rawText = textBlocks.map((block) => block.text).join("\n");
 
       const { reply, correction } = splitReplyAndCorrection(rawText);
       return jsonResponse({ reply, correction }, 200, allowedOrigin);
     } catch (error) {
-      console.error("Anthropic API error:", error);
+      console.error("Gemini API error:", error);
       return jsonResponse({ error: "Failed to get a response from the AI" }, 502, allowedOrigin);
     }
   },

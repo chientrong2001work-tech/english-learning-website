@@ -197,7 +197,7 @@ export default function SpeakingRoomPage() {
               <p>
                 Chưa cấu hình API cho Phòng Speaking ảo, nên tính năng trò chuyện với AI hiện chưa hoạt động. Đây
                 là tính năng cần một backend riêng (xem thư mục <code className="font-mono">worker/</code> trong
-                dự án) để kết nối tới Claude API một cách an toàn.
+                dự án) để kết nối tới Gemini API một cách an toàn.
               </p>
             </div>
           )}
