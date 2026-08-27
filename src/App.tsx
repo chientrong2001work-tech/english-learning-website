@@ -1,16 +1,20 @@
+import { useEffect, useState } from "react";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
-import PlacementTest from "./components/placement/PlacementTest";
 import Roadmap from "./components/roadmap/Roadmap";
 import Flashcards from "./components/Flashcards";
 import Quiz from "./components/Quiz";
 import GrammarTips from "./components/GrammarTips";
 import Footer from "./components/Footer";
+import EntryTestPage from "./pages/EntryTestPage";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useLevelProgress } from "./hooks/useLevelProgress";
 import { vocabulary } from "./data/vocabulary";
 
+const ENTRY_TEST_ROUTE = "#/kiem-tra-dau-vao";
+
 function App() {
+  const [route, setRoute] = useState(() => window.location.hash);
   const [knownIds, setKnownIds] = useLocalStorage<string[]>("engup-known-words", []);
   const {
     knownIds: levelKnownIds,
@@ -20,6 +24,14 @@ function App() {
     placementLevel,
     applyPlacement,
   } = useLevelProgress();
+
+  useEffect(() => {
+    function handleHashChange() {
+      setRoute(window.location.hash);
+    }
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
 
   function handleToggleKnown(id: string, known: boolean) {
     setKnownIds((prev) => {
@@ -32,12 +44,15 @@ function App() {
 
   const topicKnownCount = knownIds.filter((id) => vocabulary.some((w) => w.id === id)).length;
 
+  if (route === ENTRY_TEST_ROUTE) {
+    return <EntryTestPage placementLevel={placementLevel} onApplyPlacement={applyPlacement} />;
+  }
+
   return (
     <div className="min-h-screen bg-[#f7fbf9]">
       <Navbar knownCount={topicKnownCount} totalCount={vocabulary.length} />
       <main>
         <Hero />
-        <PlacementTest placementLevel={placementLevel} onApplyPlacement={applyPlacement} />
         <Roadmap
           progress={progress}
           knownIds={levelKnownIds}
