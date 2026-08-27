@@ -117,7 +117,7 @@ export default function PlacementSpeaking({ onComplete }: PlacementSpeakingProps
       <div className="mb-6 text-center">
         <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-brand-500">
           <Mic className="h-4 w-4" />
-          Phần 4: Nói · Câu {index + 1}/{placementSpeakingQuestions.length}
+          Phần 4: Speaking · Câu {index + 1}/{placementSpeakingQuestions.length}
         </p>
         <h2 className="font-display text-2xl font-bold text-brand-900">Trả lời câu hỏi bằng giọng nói</h2>
         <p className="mx-auto mt-2 max-w-xl text-sm text-brand-900/60">

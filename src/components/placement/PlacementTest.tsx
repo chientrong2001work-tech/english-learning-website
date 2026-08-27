@@ -4,13 +4,15 @@ import { levels } from "../../data/levels";
 import { readingTests } from "../../data/readingTests";
 import { placementListening } from "../../data/placementQuiz";
 import { SKILL_PASS_RATIO } from "../../hooks/useLevelProgress";
-import { speak } from "../../lib/speech";
+import { normalizeText, speakDialogue, type DialogueLine } from "../../lib/speech";
+import { scoreToBand } from "../../lib/textScoring";
 import type { CEFRLevel } from "../../types";
 import PlacementWriting, { type WritingResult } from "./PlacementWriting";
 import PlacementSpeaking, { type SpeakingRecording } from "./PlacementSpeaking";
 
 const READING_QUESTIONS_PER_LEVEL = 2;
-const QUESTIONS_PER_LEVEL = READING_QUESTIONS_PER_LEVEL + 2; // + 2 listening
+const LISTENING_QUESTIONS_PER_LEVEL = 2;
+const QUESTIONS_PER_LEVEL = READING_QUESTIONS_PER_LEVEL + LISTENING_QUESTIONS_PER_LEVEL;
 
 interface QuizItem {
   id: string;
@@ -18,10 +20,11 @@ interface QuizItem {
   section: "reading" | "listening";
   passage?: string;
   passageTitle?: string;
-  audioWord?: string;
+  dialogue?: DialogueLine[];
   question: string;
   options: string[];
   correctAnswer: string;
+  acceptedTextAnswers?: string[];
 }
 
 function buildQuiz(): QuizItem[] {
@@ -44,10 +47,11 @@ function buildQuiz(): QuizItem[] {
       id: item.id,
       level: info.id,
       section: "listening" as const,
-      audioWord: item.word,
-      question: "Bạn vừa nghe từ này. Nó có nghĩa là gì?",
+      dialogue: item.dialogue,
+      question: item.question,
       options: item.options,
       correctAnswer: item.correctAnswer,
+      acceptedTextAnswers: item.acceptedTextAnswers,
     })),
   );
 
@@ -61,6 +65,13 @@ interface LevelResult {
   passed: boolean;
 }
 
+interface SectionResult {
+  correct: number;
+  total: number;
+  score: number;
+  band: string;
+}
+
 interface PlacementTestProps {
   placementLevel: CEFRLevel | null;
   onApplyPlacement: (level: CEFRLevel) => void;
@@ -71,9 +82,13 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
   const [quiz] = useState<QuizItem[]>(() => buildQuiz());
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
+  const [textAnswer, setTextAnswer] = useState("");
+  const [textAnswerFeedback, setTextAnswerFeedback] = useState<boolean | null>(null);
   const [correctByLevel, setCorrectByLevel] = useState<Record<CEFRLevel, number>>({} as Record<CEFRLevel, number>);
+  const [correctBySection, setCorrectBySection] = useState({ reading: 0, listening: 0 });
   const [finalLevel, setFinalLevel] = useState<CEFRLevel | null>(null);
-  const [levelResults, setLevelResults] = useState<LevelResult[]>([]);
+  const [readingResult, setReadingResult] = useState<SectionResult | null>(null);
+  const [listeningResult, setListeningResult] = useState<SectionResult | null>(null);
   const [writingResult, setWritingResult] = useState<WritingResult | null>(null);
   const [speakingRecordings, setSpeakingRecordings] = useState<SpeakingRecording[]>([]);
 
@@ -90,21 +105,24 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
   function startTest() {
     setIndex(0);
     setSelected(null);
+    setTextAnswer("");
+    setTextAnswerFeedback(null);
     setCorrectByLevel({} as Record<CEFRLevel, number>);
+    setCorrectBySection({ reading: 0, listening: 0 });
     setFinalLevel(null);
-    setLevelResults([]);
+    setReadingResult(null);
+    setListeningResult(null);
     setWritingResult(null);
     setSpeakingRecordings([]);
     setStage("testing");
   }
 
-  function computeResult(tally: Record<CEFRLevel, number>) {
+  function computeResult(tally: Record<CEFRLevel, number>, sectionTally: { reading: number; listening: number }) {
     const results: LevelResult[] = levels.map((info) => {
       const correct = tally[info.id] ?? 0;
       const total = QUESTIONS_PER_LEVEL;
       return { level: info.id, correct, total, passed: correct / total >= SKILL_PASS_RATIO };
     });
-    setLevelResults(results);
 
     let best: CEFRLevel | null = null;
     for (const r of results) {
@@ -112,6 +130,24 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
       else break;
     }
     setFinalLevel(best);
+
+    const readingTotal = levels.length * READING_QUESTIONS_PER_LEVEL;
+    const listeningTotal = levels.length * LISTENING_QUESTIONS_PER_LEVEL;
+    const readingScore = Math.round((sectionTally.reading / readingTotal) * 100);
+    const listeningScore = Math.round((sectionTally.listening / listeningTotal) * 100);
+    setReadingResult({
+      correct: sectionTally.reading,
+      total: readingTotal,
+      score: readingScore,
+      band: scoreToBand(readingScore),
+    });
+    setListeningResult({
+      correct: sectionTally.listening,
+      total: listeningTotal,
+      score: listeningScore,
+      band: scoreToBand(listeningScore),
+    });
+
     setStage("writing");
   }
 
@@ -125,14 +161,16 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
     setStage("result");
   }
 
-  function handleAnswer(option: string) {
+  function submitAnswer(isCorrect: boolean, chosenLabel: string) {
     if (selected) return;
-    setSelected(option);
-    const isCorrect = option === currentItem.correctAnswer;
+    setSelected(chosenLabel);
     const nextTally = { ...correctByLevel };
+    const nextSectionTally = { ...correctBySection };
     if (isCorrect) {
       nextTally[currentItem.level] = (nextTally[currentItem.level] ?? 0) + 1;
       setCorrectByLevel(nextTally);
+      nextSectionTally[currentItem.section] = nextSectionTally[currentItem.section] + 1;
+      setCorrectBySection(nextSectionTally);
     }
 
     window.setTimeout(() => {
@@ -140,10 +178,24 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
       if (nextIndex < quiz.length) {
         setIndex(nextIndex);
         setSelected(null);
+        setTextAnswer("");
+        setTextAnswerFeedback(null);
       } else {
-        computeResult(nextTally);
+        computeResult(nextTally, nextSectionTally);
       }
     }, 600);
+  }
+
+  function handleAnswer(option: string) {
+    submitAnswer(option === currentItem.correctAnswer, option);
+  }
+
+  function handleTextSubmit() {
+    if (selected || !textAnswer.trim()) return;
+    const normalized = normalizeText(textAnswer);
+    const isCorrect = (currentItem.acceptedTextAnswers ?? []).some((a) => normalized.includes(normalizeText(a)));
+    setTextAnswerFeedback(isCorrect);
+    submitAnswer(isCorrect, textAnswer.trim());
   }
 
   function handleUnlock() {
@@ -159,27 +211,28 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
           </span>
           <h2 className="font-display text-3xl font-bold text-brand-900">Test trình độ tiếng Anh</h2>
           <p className="mx-auto mt-3 max-w-xl text-brand-900/60">
-            Bài test đầu vào đầy đủ 4 kỹ năng như một bài thi thử thật — Đọc, Nghe, Viết, và Nói (ghi âm giọng nói
-            của bạn) — làm liền mạch và có báo cáo kết quả khi hoàn tất.
+            Bài test đầu vào đầy đủ 4 kỹ năng như một bài thi thử thật — Reading, Listening, Writing, và Speaking
+            (ghi âm giọng nói của bạn) — làm liền mạch và có báo cáo kết quả khi hoàn tất.
           </p>
 
           <div className="mx-auto mt-6 max-w-md space-y-2 rounded-2xl bg-brand-50 p-5 text-left text-sm text-brand-900/70">
             <p>
-              📖 <strong>Phần 1 — Đọc hiểu:</strong> 12 câu trắc nghiệm dựa trên đoạn văn, độ khó tăng dần từ A1
-              đến C2.
+              📖 <strong>Phần 1 — Reading:</strong> 12 câu trắc nghiệm dựa trên đoạn văn, độ khó tăng dần từ A1 đến
+              C2.
             </p>
             <p>
-              🎧 <strong>Phần 2 — Nghe hiểu:</strong> 12 câu, nghe một từ và chọn đúng nghĩa, độ khó cũng tăng dần.
+              🎧 <strong>Phần 2 — Listening:</strong> 12 câu, nghe một đoạn hội thoại ngắn rồi trả lời câu hỏi (chọn
+              đáp án hoặc gõ câu trả lời), độ khó tăng dần.
             </p>
             <p>
-              ✍️ <strong>Phần 3 — Viết:</strong> viết một đoạn ngắn giới thiệu bản thân bằng tiếng Anh.
+              ✍️ <strong>Phần 3 — Writing:</strong> viết một đoạn ngắn giới thiệu bản thân bằng tiếng Anh.
             </p>
             <p>
-              🎤 <strong>Phần 4 — Nói:</strong> trả lời 3 câu hỏi bằng giọng nói thật của bạn (không đọc lại từ
+              🎤 <strong>Phần 4 — Speaking:</strong> trả lời 3 câu hỏi bằng giọng nói thật của bạn (không đọc lại từ
               vựng) — trình duyệt sẽ ghi âm để bạn nghe lại.
             </p>
             <p>
-              ✅ Trình độ CEFR được tính từ phần Đọc + Nghe: mỗi cấp có 4 câu, đạt{" "}
+              ✅ Trình độ CEFR được tính từ phần Reading + Listening: mỗi cấp có 4 câu, đạt{" "}
               <strong>{Math.round(SKILL_PASS_RATIO * 100)}%</strong> trở lên (từ 3/4 câu) ở tất cả các cấp liên
               tiếp từ A1 thì trình độ của bạn được tính đến cấp cao nhất đạt.
             </p>
@@ -237,26 +290,48 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
               : "Không sao cả — hãy bắt đầu học từ cấp A1 trong Lộ trình CEFR để xây nền tảng vững chắc."}
           </p>
 
-          <div className="mx-auto mt-6 max-w-md space-y-2 text-left">
-            {levelResults.map((r) => (
-              <div key={r.level} className="flex items-center justify-between rounded-xl border border-brand-100 p-3">
-                <span className="font-medium text-brand-900">Cấp {r.level}</span>
-                <span
-                  className={`inline-flex items-center gap-1.5 font-semibold ${r.passed ? "text-brand-600" : "text-red-500"}`}
-                >
-                  {r.passed ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                  {r.correct}/{r.total} ({Math.round((r.correct / r.total) * 100)}%)
-                </span>
-              </div>
-            ))}
-          </div>
-
           <div className="mx-auto mt-6 max-w-md space-y-4 text-left">
+            <div className="rounded-xl border border-brand-100 p-4">
+              <p className="mb-1 flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2 font-semibold text-brand-900">
+                  <BookOpen className="h-4 w-4 text-brand-500" />
+                  Reading
+                </span>
+                {readingResult && (
+                  <span className="text-sm font-semibold text-brand-600">
+                    {readingResult.score}/100 · {readingResult.band}
+                  </span>
+                )}
+              </p>
+              {readingResult && (
+                <p className="text-sm text-brand-900/50">Đúng {readingResult.correct}/{readingResult.total} câu.</p>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-brand-100 p-4">
+              <p className="mb-1 flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2 font-semibold text-brand-900">
+                  <Headphones className="h-4 w-4 text-brand-500" />
+                  Listening
+                </span>
+                {listeningResult && (
+                  <span className="text-sm font-semibold text-brand-600">
+                    {listeningResult.score}/100 · {listeningResult.band}
+                  </span>
+                )}
+              </p>
+              {listeningResult && (
+                <p className="text-sm text-brand-900/50">
+                  Đúng {listeningResult.correct}/{listeningResult.total} câu.
+                </p>
+              )}
+            </div>
+
             <div className="rounded-xl border border-brand-100 p-4">
               <p className="mb-2 flex items-center justify-between gap-2">
                 <span className="flex items-center gap-2 font-semibold text-brand-900">
                   <PenLine className="h-4 w-4 text-brand-500" />
-                  Phần Viết
+                  Writing
                 </span>
                 {writingResult && (
                   <span className="text-sm font-semibold text-brand-600">
@@ -281,7 +356,7 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
             <div className="rounded-xl border border-brand-100 p-4">
               <p className="mb-3 flex items-center gap-2 font-semibold text-brand-900">
                 <Mic className="h-4 w-4 text-brand-500" />
-                Phần Nói ({speakingRecordings.length}/3 câu đã ghi âm)
+                Speaking ({speakingRecordings.length}/3 câu đã ghi âm)
               </p>
               {speakingRecordings.length > 0 ? (
                 <div className="space-y-4">
@@ -351,13 +426,14 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
 
   const posInSection = index - sectionStartIndex + 1;
   const SectionIcon = currentItem.section === "reading" ? BookOpen : Headphones;
+  const isTextAnswer = selected !== null && !currentItem.options.includes(selected);
 
   return (
     <section id="placement" className="mx-auto max-w-3xl px-6 py-20">
       <div className="mb-6 text-center">
         <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-brand-500">
           <SectionIcon className="h-4 w-4" />
-          Phần {currentItem.section === "reading" ? "1" : "2"}: {currentItem.section === "reading" ? "Đọc hiểu" : "Nghe hiểu"}
+          Phần {currentItem.section === "reading" ? "1" : "2"}: {currentItem.section === "reading" ? "Reading" : "Listening"}
           {" · "}Câu {posInSection}/{sectionTotal}
         </p>
         <h2 className="font-display text-2xl font-bold text-brand-900">Test trình độ tiếng Anh</h2>
@@ -378,14 +454,14 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
           </div>
         )}
 
-        {currentItem.section === "listening" && currentItem.audioWord && (
+        {currentItem.section === "listening" && currentItem.dialogue && (
           <div className="mb-5 flex justify-center">
             <button
-              onClick={() => speak(currentItem.audioWord!)}
+              onClick={() => speakDialogue(currentItem.dialogue!)}
               className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-3 font-semibold text-white transition hover:bg-brand-600"
             >
               <Volume2 className="h-5 w-5" />
-              Nghe từ
+              Nghe hội thoại
             </button>
           </div>
         )}
@@ -417,6 +493,33 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
             );
           })}
         </div>
+
+        {currentItem.section === "listening" && (
+          <div className="mt-5 border-t border-brand-50 pt-4">
+            <p className="mb-2 text-center text-xs text-brand-900/40">Hoặc gõ câu trả lời của bạn</p>
+            <div className="flex gap-2">
+              <input
+                value={textAnswer}
+                onChange={(e) => setTextAnswer(e.target.value)}
+                disabled={selected !== null}
+                placeholder="Type your answer..."
+                className="flex-1 rounded-full border border-brand-100 px-4 py-2 text-sm outline-none focus:border-brand-400 disabled:bg-brand-50/50"
+              />
+              <button
+                onClick={handleTextSubmit}
+                disabled={selected !== null || !textAnswer.trim()}
+                className="shrink-0 rounded-full bg-brand-100 px-5 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Trả lời
+              </button>
+            </div>
+            {isTextAnswer && textAnswerFeedback !== null && (
+              <p className={`mt-2 text-center text-sm font-semibold ${textAnswerFeedback ? "text-brand-600" : "text-red-500"}`}>
+                {textAnswerFeedback ? "Chính xác!" : `Chưa đúng — đáp án: ${currentItem.correctAnswer}`}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );

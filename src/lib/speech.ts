@@ -6,6 +6,28 @@ export function speak(text: string, lang = "en-US") {
   window.speechSynthesis.speak(utterance);
 }
 
+export interface DialogueLine {
+  speaker: "A" | "B";
+  text: string;
+}
+
+// Plays a short two-person dialogue as a queued sequence of utterances (the
+// Web Speech API plays speak() calls back-to-back when cancel() isn't called
+// in between), with a distinct pitch per speaker and a slightly slower rate
+// so the exchange stays easy to follow — used for listening comprehension
+// instead of a single isolated word.
+export function speakDialogue(lines: DialogueLine[], lang = "en-US") {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  for (const line of lines) {
+    const utterance = new SpeechSynthesisUtterance(line.text);
+    utterance.lang = lang;
+    utterance.rate = 0.95;
+    utterance.pitch = line.speaker === "A" ? 1 : 1.3;
+    window.speechSynthesis.speak(utterance);
+  }
+}
+
 const COMBINING_DIACRITICS = /[̀-ͯ]/g;
 
 export function normalizeText(text: string): string {

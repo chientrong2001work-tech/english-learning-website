@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, PenLine, RotateCcw } from "lucide-react";
+import { Check, PenLine } from "lucide-react";
 import { scoreEnglishResponse } from "../../lib/textScoring";
 
 const MIN_WORDS_TO_SUBMIT = 15;
@@ -38,16 +38,12 @@ export default function PlacementWriting({ onComplete }: PlacementWritingProps) 
     setResult({ answer, ...scored });
   }
 
-  function rewrite() {
-    setResult(null);
-  }
-
   return (
     <section className="mx-auto max-w-3xl px-6 py-20">
       <div className="mb-6 text-center">
         <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-brand-500">
           <PenLine className="h-4 w-4" />
-          Phần 3: Viết
+          Phần 3: Writing
         </p>
         <h2 className="font-display text-2xl font-bold text-brand-900">Viết một đoạn ngắn bằng tiếng Anh</h2>
       </div>
@@ -98,14 +94,7 @@ export default function PlacementWriting({ onComplete }: PlacementWritingProps) 
               thật.
             </p>
 
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-              <button
-                onClick={rewrite}
-                className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-5 py-2.5 font-semibold text-brand-700 transition hover:bg-brand-50"
-              >
-                <RotateCcw className="h-4 w-4" />
-                Viết lại
-              </button>
+            <div className="mt-5 flex justify-center">
               <button
                 onClick={() => onComplete(result)}
                 className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-3 font-semibold text-white transition hover:bg-brand-600"

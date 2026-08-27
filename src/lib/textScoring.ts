@@ -147,16 +147,19 @@ export function scoreEnglishResponse(rawText: string, options: ScoringOptions): 
 
   score = Math.round(Math.min(100, score));
 
-  let band: TextScoreResult["band"];
-  if (score < 25) band = "Chưa đạt";
-  else if (score < 45) band = "A2";
-  else if (score < 65) band = "B1";
-  else if (score < 82) band = "B2";
-  else band = "C1+";
-
   if (feedback.length === 0) {
     feedback.push("Câu trả lời rõ ràng, đủ ý và có từ vựng đa dạng.");
   }
 
-  return { score, band, feedback };
+  return { score, band: scoreToBand(score), feedback };
+}
+
+// Shared score->band mapping, also used to present objective Reading/Listening
+// percentages with the same band labels as the heuristic Writing/Speaking scores.
+export function scoreToBand(score: number): TextScoreResult["band"] {
+  if (score < 25) return "Chưa đạt";
+  if (score < 45) return "A2";
+  if (score < 65) return "B1";
+  if (score < 82) return "B2";
+  return "C1+";
 }
