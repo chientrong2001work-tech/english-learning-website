@@ -30,7 +30,14 @@ export default function PlacementSpeaking({ onComplete }: PlacementSpeakingProps
   const recognizerRef = useRef<ContinuousSpeechRecognition | null>(null);
 
   const question = placementSpeakingQuestions[index];
-  const scored = recorder.status === "recorded" && transcript.trim() ? scoreEnglishResponse(transcript, MIN_WORDS_FOR_FULL_SCORE) : null;
+  const scored =
+    recorder.status === "recorded" && transcript.trim()
+      ? scoreEnglishResponse(transcript, {
+          promptText: question.prompt,
+          minWordsForFullLength: MIN_WORDS_FOR_FULL_SCORE,
+          keywordGroups: question.keywordGroups,
+        })
+      : null;
 
   function startRecording() {
     setTranscript("");
@@ -62,7 +69,13 @@ export default function PlacementSpeaking({ onComplete }: PlacementSpeakingProps
 
   function confirmAndContinue() {
     if (!recorder.audioUrl) return;
-    const finalScore = transcript.trim() ? scoreEnglishResponse(transcript, MIN_WORDS_FOR_FULL_SCORE) : null;
+    const finalScore = transcript.trim()
+      ? scoreEnglishResponse(transcript, {
+          promptText: question.prompt,
+          minWordsForFullLength: MIN_WORDS_FOR_FULL_SCORE,
+          keywordGroups: question.keywordGroups,
+        })
+      : null;
     const next = [
       ...recordings,
       {

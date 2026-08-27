@@ -26,7 +26,15 @@ export default function PlacementWriting({ onComplete }: PlacementWritingProps) 
   const canSubmit = wordCount >= MIN_WORDS_TO_SUBMIT;
 
   function submit() {
-    const scored = scoreEnglishResponse(answer, MIN_WORDS_FOR_FULL_SCORE);
+    const scored = scoreEnglishResponse(answer, {
+      promptText: PROMPT,
+      minWordsForFullLength: MIN_WORDS_FOR_FULL_SCORE,
+      keywordGroups: [
+        ["my name", "i am", "i'm", "call me"],
+        ["work", "job", "study", "studying", "student", "university", "college", "school"],
+        ["learning english", "learn english", "study english", "improve my english", "improve english", "my english"],
+      ],
+    });
     setResult({ answer, ...scored });
   }
 

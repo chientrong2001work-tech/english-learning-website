@@ -4,6 +4,15 @@ export interface TextScoreResult {
   feedback: string[];
 }
 
+export interface ScoringOptions {
+  // The question/prompt text — used to reject answers that just echo it back.
+  promptText?: string;
+  minWordsForFullLength: number;
+  // Groups of synonyms; an answer that actually addresses the question is
+  // expected to hit most groups (e.g. [["my name", "i am"], ["from", "i live in"]]).
+  keywordGroups?: string[][];
+}
+
 const CONNECTORS = [
   "because",
   "although",
@@ -30,11 +39,42 @@ function isMostlyEnglish(text: string): boolean {
   return nonAsciiCount / Math.max(1, text.length) < 0.15;
 }
 
+function normalizeWords(text: string): string[] {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+// Catches the "just copy the question into the answer box" case: if most of
+// the answer's words come straight from the prompt and it isn't meaningfully
+// longer than the prompt, it isn't a real answer.
+function isEchoOfPrompt(promptText: string | undefined, answerText: string): boolean {
+  if (!promptText) return false;
+  const promptWords = normalizeWords(promptText);
+  const answerWords = normalizeWords(answerText);
+  if (promptWords.length === 0 || answerWords.length === 0) return false;
+  const promptSet = new Set(promptWords);
+  const overlap = answerWords.filter((w) => promptSet.has(w)).length;
+  const overlapRatio = overlap / answerWords.length;
+  return overlapRatio > 0.6 && answerWords.length <= promptWords.length * 1.5;
+}
+
+function relevanceScore(text: string, keywordGroups: string[][] | undefined): number | null {
+  if (!keywordGroups || keywordGroups.length === 0) return null;
+  const lower = text.toLowerCase();
+  const hits = keywordGroups.filter((group) => group.some((kw) => lower.includes(kw))).length;
+  return hits / keywordGroups.length;
+}
+
 // Heuristic, rule-based scorer — not a real grammar/content examiner. It
-// checks observable signals (length, sentence count, vocabulary variety,
-// use of connectors) so a submitted answer earns a score reflecting its
-// actual quality instead of just being marked "done" for being non-empty.
-export function scoreEnglishResponse(rawText: string, minWordsForFullLength: number): TextScoreResult {
+// rejects answers that just echo the question, then checks observable
+// signals (length, sentence count, vocabulary variety, connectors, and —
+// when keywordGroups are given — whether the answer actually addresses what
+// was asked) so the score reflects real answer quality, not just completion.
+export function scoreEnglishResponse(rawText: string, options: ScoringOptions): TextScoreResult {
+  const { promptText, minWordsForFullLength, keywordGroups } = options;
   const text = rawText.trim();
   const words = text.length ? text.split(/\s+/) : [];
   const wordCount = words.length;
@@ -44,6 +84,13 @@ export function scoreEnglishResponse(rawText: string, minWordsForFullLength: num
   }
   if (!isMostlyEnglish(text)) {
     return { score: 0, band: "Chưa đạt", feedback: ["Câu trả lời cần được viết/nói bằng tiếng Anh."] };
+  }
+  if (isEchoOfPrompt(promptText, text)) {
+    return {
+      score: 0,
+      band: "Chưa đạt",
+      feedback: ["Câu trả lời đang lặp lại đề bài — hãy tự trả lời bằng lời của chính bạn."],
+    };
   }
 
   const sentences = text
@@ -57,32 +104,45 @@ export function scoreEnglishResponse(rawText: string, minWordsForFullLength: num
   const lexicalDiversity = wordCount ? uniqueWords.size / wordCount : 0;
   const lowerText = text.toLowerCase();
   const connectorHits = CONNECTORS.filter((c) => lowerText.includes(c)).length;
+  const relevance = relevanceScore(text, keywordGroups);
+
+  const weights =
+    relevance === null
+      ? { length: 40, sentence: 20, diversity: 20, connector: 20, relevance: 0 }
+      : { length: 25, sentence: 15, diversity: 15, connector: 15, relevance: 30 };
 
   const feedback: string[] = [];
   let score = 0;
 
-  const lengthScore = Math.min(40, (wordCount / minWordsForFullLength) * 40);
+  const lengthScore = Math.min(weights.length, (wordCount / minWordsForFullLength) * weights.length);
   score += lengthScore;
   if (wordCount < minWordsForFullLength * 0.6) {
     feedback.push("Câu trả lời còn ngắn — hãy nói/viết chi tiết hơn.");
   }
 
-  const sentenceScore = Math.min(20, sentenceCount * 5);
+  const sentenceScore = Math.min(weights.sentence, sentenceCount * (weights.sentence / 4));
   score += sentenceScore;
   if (sentenceCount < 2) {
     feedback.push("Hãy chia ý thành nhiều câu rõ ràng hơn.");
   }
 
-  const diversityScore = Math.min(20, lexicalDiversity * 28);
+  const diversityScore = Math.min(weights.diversity, lexicalDiversity * (weights.diversity * 1.4));
   score += diversityScore;
   if (lexicalDiversity < 0.55) {
     feedback.push("Hãy dùng từ vựng đa dạng hơn, tránh lặp lại cùng một từ nhiều lần.");
   }
 
-  const connectorScore = Math.min(20, connectorHits * 10);
+  const connectorScore = Math.min(weights.connector, connectorHits * (weights.connector / 2));
   score += connectorScore;
   if (connectorHits === 0) {
     feedback.push("Hãy thử dùng từ nối (because, however, for example...) để câu trả lời mạch lạc hơn.");
+  }
+
+  if (relevance !== null) {
+    score += relevance * weights.relevance;
+    if (relevance < 0.5) {
+      feedback.push("Câu trả lời chưa đề cập đủ các ý mà câu hỏi yêu cầu.");
+    }
   }
 
   score = Math.round(Math.min(100, score));
