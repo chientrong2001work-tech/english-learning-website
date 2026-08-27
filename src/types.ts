@@ -22,6 +22,7 @@ export interface VocabWord {
   meaning: string;
   example: string;
   exampleMeaning: string;
+  emoji?: string;
 }
 
 export interface GrammarTip {
@@ -48,6 +49,7 @@ export interface LevelVocabWord {
   meaning: string;
   example?: string;
   exampleMeaning?: string;
+  emoji?: string;
 }
 
 export interface ReadingQuestion {

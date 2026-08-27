@@ -8,6 +8,7 @@ export interface QuizWord {
   word: string;
   meaning: string;
   ipa?: string;
+  emoji?: string;
   example?: string;
   exampleMeaning?: string;
 }
@@ -89,6 +90,10 @@ export default function VocabQuizCard({ word, pool, isKnown, onAnswered, onNext 
           <p className={`text-sm font-semibold ${isCorrectPick ? "text-green-600" : "text-red-500"}`}>
             {isCorrectPick ? "Chính xác! Đã đánh dấu Đã thuộc." : "Chưa đúng — đã đánh dấu Cần ôn lại."}
           </p>
+          <div className="mt-3 flex flex-col items-center gap-1">
+            {word.emoji && <span className="text-5xl leading-none">{word.emoji}</span>}
+            <p className="text-base font-semibold text-brand-900">{word.meaning}</p>
+          </div>
           {word.example && (
             <div className="mt-3 rounded-xl bg-brand-50 p-3 text-left">
               <p className="text-sm italic text-brand-900/70">"{word.example}"</p>
