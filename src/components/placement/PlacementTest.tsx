@@ -152,11 +152,8 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
       band: scoreToBand(listeningScore),
     });
 
-    const overallCorrect = sectionTally.reading + sectionTally.listening;
-    const overallTotal = readingTotal + listeningTotal;
-    const overallScore = Math.round((overallCorrect / overallTotal) * 100);
-    setFinalLevel(mapOverallScoreToLevel(overallScore));
-
+    // The overall CEFR level isn't decided yet — it needs Writing and
+    // Speaking too, which haven't happened. See handleSpeakingComplete().
     setStage("writing");
   }
 
@@ -167,6 +164,20 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
 
   function handleSpeakingComplete(recordings: SpeakingRecording[]) {
     setSpeakingRecordings(recordings);
+
+    // Overall level = the average of all 4 skill scores, mirroring how IELTS
+    // computes an Overall Band Score as the mean of Listening/Reading/
+    // Writing/Speaking. A Speaking answer with no recognizable content
+    // counts as 0 for this average — it can't be scored as done just
+    // because a recording exists.
+    const speakingScore =
+      recordings.length > 0
+        ? Math.round(recordings.reduce((sum, r) => sum + (r.score ?? 0), 0) / recordings.length)
+        : 0;
+    const skillScores = [readingResult?.score ?? 0, listeningResult?.score ?? 0, writingResult?.score ?? 0, speakingScore];
+    const overallScore = Math.round(skillScores.reduce((a, b) => a + b, 0) / skillScores.length);
+    setFinalLevel(mapOverallScoreToLevel(overallScore));
+
     setStage("result");
   }
 
@@ -241,8 +252,9 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
               vựng) — trình duyệt sẽ ghi âm để bạn nghe lại.
             </p>
             <p>
-              ✅ Trình độ CEFR được tính từ <strong>tổng điểm</strong> phần Reading + Listening (số câu đúng trên
-              tổng 24 câu), quy đổi thẳng theo thang điểm sang cấp độ tương ứng.
+              ✅ Trình độ CEFR cuối cùng = <strong>trung bình cộng điểm cả 4 kỹ năng</strong> (Reading, Listening,
+              Writing, Speaking) — giống cách IELTS tính Overall Band Score bằng trung bình 4 kỹ năng — rồi quy đổi
+              sang thang CEFR. Câu Speaking không nhận diện được nội dung sẽ tính 0 điểm khi gộp vào điểm tổng.
             </p>
             <p>🔁 Mỗi lần làm lại, toàn bộ câu hỏi Reading và Listening sẽ được đổi khác so với lần trước.</p>
             <p>
@@ -373,18 +385,16 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
                     <div key={rec.id} className="border-t border-brand-50 pt-3 first:border-0 first:pt-0">
                       <div className="mb-1 flex items-center justify-between gap-2">
                         <p className="text-sm text-brand-900/70">{rec.prompt}</p>
-                        {rec.score !== null && (
-                          <span className="shrink-0 text-sm font-semibold text-brand-600">
-                            {rec.score}/100 · {rec.band}
-                          </span>
-                        )}
+                        <span className="shrink-0 text-sm font-semibold text-brand-600">
+                          {rec.score !== null ? `${rec.score}/100 · ${rec.band}` : "0/100"}
+                        </span>
                       </div>
                       <audio controls src={rec.audioUrl} className="w-full" />
                       {rec.transcript ? (
                         <p className="mt-1.5 text-xs italic text-brand-900/50">"{rec.transcript}"</p>
                       ) : (
                         <p className="mt-1.5 text-xs text-brand-900/40">
-                          Không nhận diện được nội dung để chấm điểm tự động.
+                          Không nhận diện được nội dung — tính 0 điểm khi gộp vào điểm tổng.
                         </p>
                       )}
                       {rec.feedback.length > 0 && (
