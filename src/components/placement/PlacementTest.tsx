@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
-import { Award, BookOpen, Check, Headphones, Lock, Rocket, RotateCcw, Unlock, Volume2, X } from "lucide-react";
+import { Award, BookOpen, Check, Headphones, Lock, Mic, PenLine, Rocket, RotateCcw, Unlock, Volume2, X } from "lucide-react";
 import { levels } from "../../data/levels";
 import { readingTests } from "../../data/readingTests";
 import { placementListening } from "../../data/placementQuiz";
 import { SKILL_PASS_RATIO } from "../../hooks/useLevelProgress";
 import { speak } from "../../lib/speech";
 import type { CEFRLevel } from "../../types";
+import PlacementWriting from "./PlacementWriting";
+import PlacementSpeaking, { type SpeakingRecording } from "./PlacementSpeaking";
 
 const READING_QUESTIONS_PER_LEVEL = 2;
 const QUESTIONS_PER_LEVEL = READING_QUESTIONS_PER_LEVEL + 2; // + 2 listening
@@ -65,13 +67,15 @@ interface PlacementTestProps {
 }
 
 export default function PlacementTest({ placementLevel, onApplyPlacement }: PlacementTestProps) {
-  const [stage, setStage] = useState<"intro" | "testing" | "result">("intro");
+  const [stage, setStage] = useState<"intro" | "testing" | "writing" | "speaking" | "result">("intro");
   const [quiz] = useState<QuizItem[]>(() => buildQuiz());
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [correctByLevel, setCorrectByLevel] = useState<Record<CEFRLevel, number>>({} as Record<CEFRLevel, number>);
   const [finalLevel, setFinalLevel] = useState<CEFRLevel | null>(null);
   const [levelResults, setLevelResults] = useState<LevelResult[]>([]);
+  const [writingAnswer, setWritingAnswer] = useState("");
+  const [speakingRecordings, setSpeakingRecordings] = useState<SpeakingRecording[]>([]);
 
   const currentItem = quiz[index];
   const sectionStartIndex = useMemo(
@@ -89,6 +93,8 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
     setCorrectByLevel({} as Record<CEFRLevel, number>);
     setFinalLevel(null);
     setLevelResults([]);
+    setWritingAnswer("");
+    setSpeakingRecordings([]);
     setStage("testing");
   }
 
@@ -106,6 +112,16 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
       else break;
     }
     setFinalLevel(best);
+    setStage("writing");
+  }
+
+  function handleWritingComplete(answer: string) {
+    setWritingAnswer(answer);
+    setStage("speaking");
+  }
+
+  function handleSpeakingComplete(recordings: SpeakingRecording[]) {
+    setSpeakingRecordings(recordings);
     setStage("result");
   }
 
@@ -143,8 +159,8 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
           </span>
           <h2 className="font-display text-3xl font-bold text-brand-900">Test trình độ tiếng Anh</h2>
           <p className="mx-auto mt-3 max-w-xl text-brand-900/60">
-            Theo mô hình các bài test nhanh phổ biến (Cambridge English, EF SET) — một bài trắc nghiệm liền mạch,
-            không dừng giữa chừng, cho kết quả CEFR ngay khi nộp bài.
+            Bài test đầu vào đầy đủ 4 kỹ năng như một bài thi thử thật — Đọc, Nghe, Viết, và Nói (ghi âm giọng nói
+            của bạn) — làm liền mạch và có báo cáo kết quả khi hoàn tất.
           </p>
 
           <div className="mx-auto mt-6 max-w-md space-y-2 rounded-2xl bg-brand-50 p-5 text-left text-sm text-brand-900/70">
@@ -156,8 +172,16 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
               🎧 <strong>Phần 2 — Nghe hiểu:</strong> 12 câu, nghe một từ và chọn đúng nghĩa, độ khó cũng tăng dần.
             </p>
             <p>
-              ✅ Mỗi cấp có 4 câu (2 Đọc + 2 Nghe). Đạt <strong>{Math.round(SKILL_PASS_RATIO * 100)}%</strong> trở
-              lên (từ 3/4 câu) ở tất cả các cấp liên tiếp từ A1 thì trình độ của bạn được tính đến cấp cao nhất đạt.
+              ✍️ <strong>Phần 3 — Viết:</strong> viết một đoạn ngắn giới thiệu bản thân bằng tiếng Anh.
+            </p>
+            <p>
+              🎤 <strong>Phần 4 — Nói:</strong> trả lời 3 câu hỏi bằng giọng nói thật của bạn (không đọc lại từ
+              vựng) — trình duyệt sẽ ghi âm để bạn nghe lại.
+            </p>
+            <p>
+              ✅ Trình độ CEFR được tính từ phần Đọc + Nghe: mỗi cấp có 4 câu, đạt{" "}
+              <strong>{Math.round(SKILL_PASS_RATIO * 100)}%</strong> trở lên (từ 3/4 câu) ở tất cả các cấp liên
+              tiếp từ A1 thì trình độ của bạn được tính đến cấp cao nhất đạt.
             </p>
             <p>
               🔓 Sau khi có kết quả, bạn có thể <strong>mở khóa lộ trình từ A1 đến cấp đó</strong> để học đúng ngay
@@ -176,11 +200,19 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
             className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand-500 px-8 py-3 font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600"
           >
             <Rocket className="h-5 w-5" />
-            Bắt đầu test (24 câu)
+            Bắt đầu test đầu vào
           </button>
         </div>
       </section>
     );
+  }
+
+  if (stage === "writing") {
+    return <PlacementWriting onComplete={handleWritingComplete} />;
+  }
+
+  if (stage === "speaking") {
+    return <PlacementSpeaking onComplete={handleSpeakingComplete} />;
   }
 
   if (stage === "result") {
@@ -217,6 +249,39 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
                 </span>
               </div>
             ))}
+          </div>
+
+          <div className="mx-auto mt-6 max-w-md space-y-4 text-left">
+            <div className="rounded-xl border border-brand-100 p-4">
+              <p className="mb-2 flex items-center gap-2 font-semibold text-brand-900">
+                <PenLine className="h-4 w-4 text-brand-500" />
+                Phần Viết
+              </p>
+              {writingAnswer.trim() ? (
+                <p className="text-sm text-brand-900/70">{writingAnswer}</p>
+              ) : (
+                <p className="text-sm text-brand-900/40">Chưa có bài viết.</p>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-brand-100 p-4">
+              <p className="mb-3 flex items-center gap-2 font-semibold text-brand-900">
+                <Mic className="h-4 w-4 text-brand-500" />
+                Phần Nói ({speakingRecordings.length}/3 câu đã ghi âm)
+              </p>
+              {speakingRecordings.length > 0 ? (
+                <div className="space-y-3">
+                  {speakingRecordings.map((rec) => (
+                    <div key={rec.id}>
+                      <p className="mb-1 text-sm text-brand-900/70">{rec.prompt}</p>
+                      <audio controls src={rec.audioUrl} className="w-full" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-brand-900/40">Chưa có bài ghi âm.</p>
+              )}
+            </div>
           </div>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">

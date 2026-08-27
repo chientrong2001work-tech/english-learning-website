@@ -1,4 +1,4 @@
-import { ArrowLeft, CheckCircle2, ClipboardList, Headphones, Sparkles } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ClipboardList, Mic, Sparkles } from "lucide-react";
 import PlacementTest from "../components/placement/PlacementTest";
 import type { CEFRLevel } from "../types";
 
@@ -7,18 +7,18 @@ const GAUGE_LEVELS: CEFRLevel[] = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const STEPS = [
   {
     icon: ClipboardList,
-    title: "1. Làm bài trắc nghiệm",
-    desc: "24 câu: đọc hiểu rồi đến nghe hiểu, độ khó tăng dần qua từng cấp A1 → C2.",
+    title: "1. Đọc, Nghe, Viết",
+    desc: "Trắc nghiệm đọc/nghe theo từng cấp A1 → C2, rồi viết một đoạn ngắn giới thiệu bản thân.",
   },
   {
-    icon: Headphones,
-    title: "2. Nộp bài một lần",
-    desc: "Không dừng giữa chừng, không chấm theo từng phần — giống các bài quick-check thực tế.",
+    icon: Mic,
+    title: "2. Nói bằng giọng thật",
+    desc: "Trả lời 3 câu hỏi bằng giọng nói của bạn (không đọc lại từ vựng) — trình duyệt ghi âm để bạn nghe lại.",
   },
   {
     icon: Sparkles,
-    title: "3. Nhận kết quả CEFR",
-    desc: "Biết ngay trình độ hiện tại và có thể mở khóa lộ trình học từ A1 đến đúng cấp đó.",
+    title: "3. Nhận báo cáo kết quả",
+    desc: "Xem lại toàn bộ 4 kỹ năng và mở khóa lộ trình học từ A1 đến đúng trình độ của bạn.",
   },
 ];
 
@@ -60,7 +60,7 @@ export default function EntryTestPage({ placementLevel, onApplyPlacement }: Entr
           <ul className="mt-6 space-y-2 text-brand-900/70">
             <li className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 shrink-0 text-brand-500" />
-              24 câu, khoảng 10 phút
+              Đủ 4 kỹ năng: Đọc, Nghe, Viết, Nói (có ghi âm giọng thật)
             </li>
             <li className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 shrink-0 text-brand-500" />
