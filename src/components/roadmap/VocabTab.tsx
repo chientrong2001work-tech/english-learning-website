@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Check, Search, Shuffle, Volume2, X } from "lucide-react";
-import { normalizeText, speak } from "../../lib/speech";
+import { Search, Shuffle } from "lucide-react";
+import { normalizeText } from "../../lib/speech";
 import { shuffle } from "../../lib/array";
+import VocabQuizCard from "../VocabQuizCard";
 import type { LevelVocabWord } from "../../types";
 
 interface VocabTabProps {
@@ -16,7 +16,6 @@ export default function VocabTab({ words, knownIds, onToggleKnown }: VocabTabPro
   const [onlyUnknown, setOnlyUnknown] = useState(false);
   const [order, setOrder] = useState<string[]>(() => shuffle(words.map((w) => w.id)));
   const [index, setIndex] = useState(0);
-  const [flipped, setFlipped] = useState(false);
 
   const wordById = useMemo(() => new Map(words.map((w) => [w.id, w])), [words]);
 
@@ -36,7 +35,6 @@ export default function VocabTab({ words, knownIds, onToggleKnown }: VocabTabPro
   const isKnown = currentWord ? knownIds.includes(currentWord.id) : false;
 
   function goToNext() {
-    setFlipped(false);
     setIndex((prev) => (filteredIds.length ? (prev + 1) % filteredIds.length : 0));
   }
 
@@ -44,13 +42,11 @@ export default function VocabTab({ words, knownIds, onToggleKnown }: VocabTabPro
     if (next.query !== undefined) setQuery(next.query);
     if (next.onlyUnknown !== undefined) setOnlyUnknown(next.onlyUnknown);
     setIndex(0);
-    setFlipped(false);
   }
 
   function handleShuffle() {
     setOrder(shuffle(words.map((w) => w.id)));
     setIndex(0);
-    setFlipped(false);
   }
 
   return (
@@ -82,80 +78,16 @@ export default function VocabTab({ words, knownIds, onToggleKnown }: VocabTabPro
         </p>
       ) : (
         <>
-          <div className="perspective mx-auto h-64 w-full max-w-md">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentWord.id}
-                initial={{ opacity: 0, x: 30 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -30 }}
-                transition={{ duration: 0.2 }}
-                className="preserve-3d relative h-full w-full cursor-pointer"
-                onClick={() => setFlipped((f) => !f)}
-              >
-                <motion.div
-                  className="preserve-3d relative h-full w-full"
-                  animate={{ rotateY: flipped ? 180 : 0 }}
-                  transition={{ duration: 0.4 }}
-                >
-                  <div className="backface-hidden absolute flex h-full w-full flex-col items-center justify-center gap-2 rounded-3xl border border-brand-100 bg-white p-6 text-center shadow-xl shadow-brand-900/5">
-                    {isKnown && (
-                      <span className="absolute right-4 top-4 rounded-full bg-brand-100 p-1.5 text-brand-600">
-                        <Check className="h-4 w-4" />
-                      </span>
-                    )}
-                    <h3 className="font-display text-4xl font-bold text-brand-900">{currentWord.word}</h3>
-                    {currentWord.ipa && <p className="text-brand-900/50">{currentWord.ipa}</p>}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        speak(currentWord.word);
-                      }}
-                      className="mt-2 inline-flex items-center gap-1 rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-600 hover:bg-brand-100"
-                    >
-                      <Volume2 className="h-3.5 w-3.5" />
-                      Nghe phát âm
-                    </button>
-                    <p className="mt-4 text-xs text-brand-900/40">Bấm để xem nghĩa</p>
-                  </div>
-
-                  <div className="backface-hidden rotate-y-180 absolute flex h-full w-full flex-col items-center justify-center gap-3 rounded-3xl border border-brand-200 bg-brand-500 p-6 text-center text-white shadow-xl">
-                    <h3 className="font-display text-3xl font-bold">{currentWord.meaning}</h3>
-                    {currentWord.example && (
-                      <>
-                        <p className="text-white/90">"{currentWord.example}"</p>
-                        {currentWord.exampleMeaning && (
-                          <p className="text-sm text-white/70">{currentWord.exampleMeaning}</p>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </motion.div>
-              </motion.div>
-            </AnimatePresence>
-          </div>
+          <VocabQuizCard
+            key={currentWord.id}
+            word={currentWord}
+            pool={words}
+            isKnown={isKnown}
+            onAnswered={(correct) => onToggleKnown(currentWord.id, correct)}
+            onNext={goToNext}
+          />
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-            <button
-              onClick={() => {
-                onToggleKnown(currentWord.id, false);
-                goToNext();
-              }}
-              className="inline-flex items-center gap-2 rounded-full bg-red-50 px-5 py-2.5 font-semibold text-red-600 transition hover:bg-red-100"
-            >
-              <X className="h-4 w-4" />
-              Cần ôn lại
-            </button>
-            <button
-              onClick={() => {
-                onToggleKnown(currentWord.id, true);
-                goToNext();
-              }}
-              className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 font-semibold text-white transition hover:bg-brand-600"
-            >
-              <Check className="h-4 w-4" />
-              Đã thuộc
-            </button>
             <button
               onClick={handleShuffle}
               className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-5 py-2.5 font-semibold text-brand-700 transition hover:bg-brand-50"

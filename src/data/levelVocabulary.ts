@@ -378,8 +378,8 @@ const curatedLevelVocabulary: LevelVocabWord[] = [
 function buildBulkVocabulary(): LevelVocabWord[] {
   const words: LevelVocabWord[] = [];
   (Object.keys(bulkVocabByLevel) as CEFRLevel[]).forEach((level) => {
-    bulkVocabByLevel[level].forEach(([word, meaning], index) => {
-      words.push({ id: `${level.toLowerCase()}-x${index + 1}`, level, word, meaning });
+    bulkVocabByLevel[level].forEach(([word, meaning, ipa], index) => {
+      words.push({ id: `${level.toLowerCase()}-x${index + 1}`, level, word, meaning, ipa: ipa || undefined });
     });
   });
   return words;
