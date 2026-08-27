@@ -1,33 +1,61 @@
-import { useState } from "react";
-import { Award, Check, Headphones, Lock, Mic, PenLine, BookOpen, Rocket, RotateCcw, Unlock, X } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Award, BookOpen, Check, Headphones, Lock, Rocket, RotateCcw, Unlock, Volume2, X } from "lucide-react";
 import { levels } from "../../data/levels";
-import { levelVocabulary } from "../../data/levelVocabulary";
 import { readingTests } from "../../data/readingTests";
+import { placementListening } from "../../data/placementQuiz";
 import { SKILL_PASS_RATIO } from "../../hooks/useLevelProgress";
-import ListeningTab from "../roadmap/ListeningTab";
-import SpeakingTab from "../roadmap/SpeakingTab";
-import ReadingTab from "../roadmap/ReadingTab";
-import WritingTab from "../roadmap/WritingTab";
-import type { CEFRLevel, SkillId } from "../../types";
+import { speak } from "../../lib/speech";
+import type { CEFRLevel } from "../../types";
 
-const SKILL_ORDER: SkillId[] = ["listening", "reading", "writing", "speaking"];
+const READING_QUESTIONS_PER_LEVEL = 2;
+const QUESTIONS_PER_LEVEL = READING_QUESTIONS_PER_LEVEL + 2; // + 2 listening
 
-const skillMeta: Record<SkillId, { label: string; icon: typeof Headphones }> = {
-  listening: { label: "Nghe", icon: Headphones },
-  reading: { label: "Đọc", icon: BookOpen },
-  writing: { label: "Viết", icon: PenLine },
-  speaking: { label: "Nói", icon: Mic },
-};
+interface QuizItem {
+  id: string;
+  level: CEFRLevel;
+  section: "reading" | "listening";
+  passage?: string;
+  passageTitle?: string;
+  audioWord?: string;
+  question: string;
+  options: string[];
+  correctAnswer: string;
+}
 
-interface SkillResult {
-  skill: SkillId;
-  percent: number;
-  passed: boolean;
+function buildQuiz(): QuizItem[] {
+  const reading: QuizItem[] = levels.flatMap((info) => {
+    const test = readingTests.find((t) => t.level === info.id)!;
+    return test.questions.slice(0, READING_QUESTIONS_PER_LEVEL).map((q) => ({
+      id: q.id,
+      level: info.id,
+      section: "reading" as const,
+      passage: test.passage,
+      passageTitle: test.title,
+      question: q.question,
+      options: q.options,
+      correctAnswer: q.correctAnswer,
+    }));
+  });
+
+  const listening: QuizItem[] = levels.flatMap((info) =>
+    placementListening[info.id].map((item) => ({
+      id: item.id,
+      level: info.id,
+      section: "listening" as const,
+      audioWord: item.word,
+      question: "Bạn vừa nghe từ này. Nó có nghĩa là gì?",
+      options: item.options,
+      correctAnswer: item.correctAnswer,
+    })),
+  );
+
+  return [...reading, ...listening];
 }
 
 interface LevelResult {
   level: CEFRLevel;
-  skills: SkillResult[];
+  correct: number;
+  total: number;
   passed: boolean;
 }
 
@@ -38,56 +66,68 @@ interface PlacementTestProps {
 
 export default function PlacementTest({ placementLevel, onApplyPlacement }: PlacementTestProps) {
   const [stage, setStage] = useState<"intro" | "testing" | "result">("intro");
-  const [levelIdx, setLevelIdx] = useState(0);
-  const [skillIdx, setSkillIdx] = useState(0);
-  const [skillResults, setSkillResults] = useState<SkillResult[]>([]);
-  const [levelResults, setLevelResults] = useState<LevelResult[]>([]);
+  const [quiz] = useState<QuizItem[]>(() => buildQuiz());
+  const [index, setIndex] = useState(0);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [correctByLevel, setCorrectByLevel] = useState<Record<CEFRLevel, number>>({} as Record<CEFRLevel, number>);
   const [finalLevel, setFinalLevel] = useState<CEFRLevel | null>(null);
+  const [levelResults, setLevelResults] = useState<LevelResult[]>([]);
+
+  const currentItem = quiz[index];
+  const sectionStartIndex = useMemo(
+    () => quiz.findIndex((q) => q.section === currentItem?.section),
+    [quiz, currentItem],
+  );
+  const sectionTotal = useMemo(
+    () => quiz.filter((q) => q.section === currentItem?.section).length,
+    [quiz, currentItem],
+  );
 
   function startTest() {
-    setLevelIdx(0);
-    setSkillIdx(0);
-    setSkillResults([]);
-    setLevelResults([]);
+    setIndex(0);
+    setSelected(null);
+    setCorrectByLevel({} as Record<CEFRLevel, number>);
     setFinalLevel(null);
+    setLevelResults([]);
     setStage("testing");
   }
 
-  function finishTest(results: LevelResult[]) {
-    const passedLevels = results.filter((r) => r.passed).map((r) => r.level);
-    // Levels are tested in order (A1 -> C2) and the test stops at the first
-    // failure, so the last passed entry is always the highest level reached.
-    const best = passedLevels.length > 0 ? passedLevels[passedLevels.length - 1] : null;
+  function computeResult(tally: Record<CEFRLevel, number>) {
+    const results: LevelResult[] = levels.map((info) => {
+      const correct = tally[info.id] ?? 0;
+      const total = QUESTIONS_PER_LEVEL;
+      return { level: info.id, correct, total, passed: correct / total >= SKILL_PASS_RATIO };
+    });
+    setLevelResults(results);
+
+    let best: CEFRLevel | null = null;
+    for (const r of results) {
+      if (r.passed) best = r.level;
+      else break;
+    }
     setFinalLevel(best);
     setStage("result");
   }
 
-  function handleSkillComplete(percent: number) {
-    const skill = SKILL_ORDER[skillIdx];
-    const passed = percent >= SKILL_PASS_RATIO * 100;
-    const nextSkillResults = [...skillResults, { skill, percent, passed }];
-
-    const nextSkillIdx = skillIdx + 1;
-    if (nextSkillIdx < SKILL_ORDER.length) {
-      setSkillResults(nextSkillResults);
-      setSkillIdx(nextSkillIdx);
-      return;
+  function handleAnswer(option: string) {
+    if (selected) return;
+    setSelected(option);
+    const isCorrect = option === currentItem.correctAnswer;
+    const nextTally = { ...correctByLevel };
+    if (isCorrect) {
+      nextTally[currentItem.level] = (nextTally[currentItem.level] ?? 0) + 1;
+      setCorrectByLevel(nextTally);
     }
 
-    const level = levels[levelIdx].id;
-    const levelPassed = nextSkillResults.every((r) => r.passed);
-    const result: LevelResult = { level, skills: nextSkillResults, passed: levelPassed };
-    const nextLevelResults = [...levelResults, result];
-    setLevelResults(nextLevelResults);
-
-    const nextLevelIdx = levelIdx + 1;
-    if (levelPassed && nextLevelIdx < levels.length) {
-      setLevelIdx(nextLevelIdx);
-      setSkillIdx(0);
-      setSkillResults([]);
-    } else {
-      finishTest(nextLevelResults);
-    }
+    window.setTimeout(() => {
+      const nextIndex = index + 1;
+      if (nextIndex < quiz.length) {
+        setIndex(nextIndex);
+        setSelected(null);
+      } else {
+        computeResult(nextTally);
+      }
+    }, 600);
   }
 
   function handleUnlock() {
@@ -103,22 +143,25 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
           </span>
           <h2 className="font-display text-3xl font-bold text-brand-900">Test trình độ tiếng Anh</h2>
           <p className="mx-auto mt-3 max-w-xl text-brand-900/60">
-            Đã có nền tảng từ trước? Làm bài test theo chuẩn 4 kỹ năng IELTS để xác định đúng trình độ CEFR thực tế
-            của bạn — không cần học lại từ A1 nếu bạn đã giỏi hơn.
+            Theo mô hình các bài test nhanh phổ biến (Cambridge English, EF SET) — một bài trắc nghiệm liền mạch,
+            không dừng giữa chừng, cho kết quả CEFR ngay khi nộp bài.
           </p>
 
           <div className="mx-auto mt-6 max-w-md space-y-2 rounded-2xl bg-brand-50 p-5 text-left text-sm text-brand-900/70">
             <p>
-              🎧📖✍️🎤 Bài test theo <strong>4 kỹ năng IELTS</strong> — <strong>Nghe, Đọc, Viết, Nói</strong> — ở
-              từng cấp CEFR, bắt đầu từ A1.
+              📖 <strong>Phần 1 — Đọc hiểu:</strong> 12 câu trắc nghiệm dựa trên đoạn văn, độ khó tăng dần từ A1
+              đến C2.
             </p>
             <p>
-              ✅ Mỗi kỹ năng cần đạt <strong>{Math.round(SKILL_PASS_RATIO * 100)}%</strong> trở lên. Đạt đủ cả 4 kỹ
-              năng thì tiếp tục lên cấp kế tiếp; không đạt thì bài test dừng lại.
+              🎧 <strong>Phần 2 — Nghe hiểu:</strong> 12 câu, nghe một từ và chọn đúng nghĩa, độ khó cũng tăng dần.
             </p>
             <p>
-              🔓 Trình độ cao nhất bạn vượt qua sẽ <strong>mở khóa toàn bộ lộ trình từ A1 đến cấp đó</strong>, để bạn
-              vào học đúng ngay từ đầu.
+              ✅ Mỗi cấp có 4 câu (2 Đọc + 2 Nghe). Đạt <strong>{Math.round(SKILL_PASS_RATIO * 100)}%</strong> trở
+              lên (từ 3/4 câu) ở tất cả các cấp liên tiếp từ A1 thì trình độ của bạn được tính đến cấp cao nhất đạt.
+            </p>
+            <p>
+              🔓 Sau khi có kết quả, bạn có thể <strong>mở khóa lộ trình từ A1 đến cấp đó</strong> để học đúng ngay
+              từ đầu.
             </p>
           </div>
 
@@ -133,7 +176,7 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
             className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand-500 px-8 py-3 font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600"
           >
             <Rocket className="h-5 w-5" />
-            Bắt đầu test
+            Bắt đầu test (24 câu)
           </button>
         </div>
       </section>
@@ -162,35 +205,16 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
               : "Không sao cả — hãy bắt đầu học từ cấp A1 trong Lộ trình CEFR để xây nền tảng vững chắc."}
           </p>
 
-          <div className="mx-auto mt-6 max-w-md space-y-3 text-left">
+          <div className="mx-auto mt-6 max-w-md space-y-2 text-left">
             {levelResults.map((r) => (
-              <div key={r.level} className="rounded-xl border border-brand-100 p-3">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="font-semibold text-brand-900">Cấp {r.level}</span>
-                  <span
-                    className={`inline-flex items-center gap-1.5 text-sm font-semibold ${r.passed ? "text-brand-600" : "text-red-500"}`}
-                  >
-                    {r.passed ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                    {r.passed ? "Đạt" : "Chưa đạt"}
-                  </span>
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                  {r.skills.map((s) => {
-                    const Icon = skillMeta[s.skill].icon;
-                    return (
-                      <div
-                        key={s.skill}
-                        className={`flex flex-col items-center gap-1 rounded-lg p-2 text-xs ${
-                          s.passed ? "bg-brand-50 text-brand-700" : "bg-red-50 text-red-600"
-                        }`}
-                      >
-                        <Icon className="h-4 w-4" />
-                        {skillMeta[s.skill].label}
-                        <span className="font-semibold">{Math.round(s.percent)}%</span>
-                      </div>
-                    );
-                  })}
-                </div>
+              <div key={r.level} className="flex items-center justify-between rounded-xl border border-brand-100 p-3">
+                <span className="font-medium text-brand-900">Cấp {r.level}</span>
+                <span
+                  className={`inline-flex items-center gap-1.5 font-semibold ${r.passed ? "text-brand-600" : "text-red-500"}`}
+                >
+                  {r.passed ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                  {r.correct}/{r.total} ({Math.round((r.correct / r.total) * 100)}%)
+                </span>
               </div>
             ))}
           </div>
@@ -225,57 +249,75 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
     );
   }
 
-  const level = levels[levelIdx];
-  const skill = SKILL_ORDER[skillIdx];
-  const levelWords = levelVocabulary.filter((w) => w.level === level.id);
-  const readingTest = readingTests.find((t) => t.level === level.id)!;
-  const SkillIcon = skillMeta[skill].icon;
+  const posInSection = index - sectionStartIndex + 1;
+  const SectionIcon = currentItem.section === "reading" ? BookOpen : Headphones;
 
   return (
     <section id="placement" className="mx-auto max-w-3xl px-6 py-20">
       <div className="mb-6 text-center">
         <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-brand-500">
-          <SkillIcon className="h-4 w-4" />
-          Đang test cấp {level.id} · Kỹ năng {skillIdx + 1}/4: {skillMeta[skill].label}
+          <SectionIcon className="h-4 w-4" />
+          Phần {currentItem.section === "reading" ? "1" : "2"}: {currentItem.section === "reading" ? "Đọc hiểu" : "Nghe hiểu"}
+          {" · "}Câu {posInSection}/{sectionTotal}
         </p>
         <h2 className="font-display text-2xl font-bold text-brand-900">Test trình độ tiếng Anh</h2>
       </div>
 
-      <div className="mb-6 flex items-center justify-center gap-2">
-        {SKILL_ORDER.map((s, i) => {
-          const Icon = skillMeta[s].icon;
-          const done = i < skillIdx;
-          const active = i === skillIdx;
-          return (
-            <span
-              key={s}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${
-                active
-                  ? "bg-brand-500 text-white"
-                  : done
-                    ? "bg-brand-100 text-brand-700"
-                    : "bg-brand-50 text-brand-900/40"
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              {skillMeta[s].label}
-            </span>
-          );
-        })}
+      <div className="mb-6 h-2 w-full overflow-hidden rounded-full bg-brand-100">
+        <div
+          className="h-full rounded-full bg-brand-500 transition-all duration-300"
+          style={{ width: `${((index + (selected ? 1 : 0)) / quiz.length) * 100}%` }}
+        />
       </div>
 
-      {skill === "listening" && (
-        <ListeningTab key={`${level.id}-listening`} words={levelWords} onComplete={handleSkillComplete} />
-      )}
-      {skill === "reading" && (
-        <ReadingTab key={`${level.id}-reading`} test={readingTest} onComplete={handleSkillComplete} />
-      )}
-      {skill === "writing" && (
-        <WritingTab key={`${level.id}-writing`} words={levelWords} onComplete={handleSkillComplete} />
-      )}
-      {skill === "speaking" && (
-        <SpeakingTab key={`${level.id}-speaking`} words={levelWords} onComplete={handleSkillComplete} />
-      )}
+      <div className="rounded-3xl border border-brand-100 bg-white p-6 shadow-lg shadow-brand-900/5">
+        {currentItem.section === "reading" && currentItem.passage && (
+          <div className="mb-5 rounded-2xl bg-brand-50 p-4">
+            <p className="mb-2 font-display font-bold text-brand-900">{currentItem.passageTitle}</p>
+            <p className="text-sm leading-relaxed text-brand-900/70">{currentItem.passage}</p>
+          </div>
+        )}
+
+        {currentItem.section === "listening" && currentItem.audioWord && (
+          <div className="mb-5 flex justify-center">
+            <button
+              onClick={() => speak(currentItem.audioWord!)}
+              className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-3 font-semibold text-white transition hover:bg-brand-600"
+            >
+              <Volume2 className="h-5 w-5" />
+              Nghe từ
+            </button>
+          </div>
+        )}
+
+        <p className="mb-5 text-center font-display text-xl font-bold text-brand-900">{currentItem.question}</p>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          {currentItem.options.map((option) => {
+            const isSelected = selected === option;
+            const isCorrectOption = option === currentItem.correctAnswer;
+            const showState = selected !== null;
+            return (
+              <button
+                key={option}
+                onClick={() => handleAnswer(option)}
+                disabled={selected !== null}
+                className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-left font-medium transition ${
+                  showState && isCorrectOption
+                    ? "border-brand-400 bg-brand-50 text-brand-700"
+                    : showState && isSelected
+                      ? "border-red-300 bg-red-50 text-red-600"
+                      : "border-brand-100 hover:border-brand-300 hover:bg-brand-50"
+                }`}
+              >
+                {option}
+                {showState && isCorrectOption && <Check className="h-4 w-4" />}
+                {showState && isSelected && !isCorrectOption && <X className="h-4 w-4" />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </section>
   );
 }
