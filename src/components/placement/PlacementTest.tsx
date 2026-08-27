@@ -2,9 +2,10 @@ import { useMemo, useState } from "react";
 import { Award, BookOpen, Check, Headphones, Lock, Mic, PenLine, Rocket, RotateCcw, Unlock, Volume2, X } from "lucide-react";
 import { levels } from "../../data/levels";
 import { readingTests } from "../../data/readingTests";
+import { placementReadingVariantB } from "../../data/placementReadingExtra";
 import { placementListening } from "../../data/placementQuiz";
-import { SKILL_PASS_RATIO } from "../../hooks/useLevelProgress";
-import { normalizeText, speakDialogue, type DialogueLine } from "../../lib/speech";
+import { useLocalStorage } from "../../hooks/useLocalStorage";
+import { normalizeText, speakDialogue, stopSpeech, type DialogueLine } from "../../lib/speech";
 import { scoreToBand } from "../../lib/textScoring";
 import type { CEFRLevel } from "../../types";
 import PlacementWriting, { type WritingResult } from "./PlacementWriting";
@@ -12,7 +13,6 @@ import PlacementSpeaking, { type SpeakingRecording } from "./PlacementSpeaking";
 
 const READING_QUESTIONS_PER_LEVEL = 2;
 const LISTENING_QUESTIONS_PER_LEVEL = 2;
-const QUESTIONS_PER_LEVEL = READING_QUESTIONS_PER_LEVEL + LISTENING_QUESTIONS_PER_LEVEL;
 
 interface QuizItem {
   id: string;
@@ -27,9 +27,12 @@ interface QuizItem {
   acceptedTextAnswers?: string[];
 }
 
-function buildQuiz(): QuizItem[] {
+// Two independent editions of the test (reading passages + listening
+// dialogues) so a retake ("Làm lại") always shows a full set of different
+// questions from the attempt right before it, instead of the exact same test.
+function buildQuiz(variant: 0 | 1): QuizItem[] {
   const reading: QuizItem[] = levels.flatMap((info) => {
-    const test = readingTests.find((t) => t.level === info.id)!;
+    const test = variant === 0 ? readingTests.find((t) => t.level === info.id)! : placementReadingVariantB[info.id];
     return test.questions.slice(0, READING_QUESTIONS_PER_LEVEL).map((q) => ({
       id: q.id,
       level: info.id,
@@ -42,8 +45,13 @@ function buildQuiz(): QuizItem[] {
     }));
   });
 
-  const listening: QuizItem[] = levels.flatMap((info) =>
-    placementListening[info.id].map((item) => ({
+  const listening: QuizItem[] = levels.flatMap((info) => {
+    const pool = placementListening[info.id];
+    const items =
+      variant === 0
+        ? pool.slice(0, LISTENING_QUESTIONS_PER_LEVEL)
+        : pool.slice(LISTENING_QUESTIONS_PER_LEVEL, LISTENING_QUESTIONS_PER_LEVEL * 2);
+    return items.map((item) => ({
       id: item.id,
       level: info.id,
       section: "listening" as const,
@@ -52,17 +60,24 @@ function buildQuiz(): QuizItem[] {
       options: item.options,
       correctAnswer: item.correctAnswer,
       acceptedTextAnswers: item.acceptedTextAnswers,
-    })),
-  );
+    }));
+  });
 
   return [...reading, ...listening];
 }
 
-interface LevelResult {
-  level: CEFRLevel;
-  correct: number;
-  total: number;
-  passed: boolean;
+// Maps the combined Reading+Listening score directly to a CEFR level, so the
+// headline result always agrees with the Reading/Listening score cards
+// (previously a separate per-level "must pass every level in an unbroken
+// streak from A1" rule could report a low level despite a high overall score).
+function mapOverallScoreToLevel(score: number): CEFRLevel | null {
+  if (score >= 85) return "C2";
+  if (score >= 70) return "C1";
+  if (score >= 55) return "B2";
+  if (score >= 40) return "B1";
+  if (score >= 25) return "A2";
+  if (score >= 10) return "A1";
+  return null;
 }
 
 interface SectionResult {
@@ -78,13 +93,13 @@ interface PlacementTestProps {
 }
 
 export default function PlacementTest({ placementLevel, onApplyPlacement }: PlacementTestProps) {
+  const [attemptIndex, setAttemptIndex] = useLocalStorage("engup-placement-attempt-index", 0);
   const [stage, setStage] = useState<"intro" | "testing" | "writing" | "speaking" | "result">("intro");
-  const [quiz] = useState<QuizItem[]>(() => buildQuiz());
+  const [quiz, setQuiz] = useState<QuizItem[]>(() => buildQuiz((attemptIndex % 2) as 0 | 1));
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [textAnswer, setTextAnswer] = useState("");
   const [textAnswerFeedback, setTextAnswerFeedback] = useState<boolean | null>(null);
-  const [correctByLevel, setCorrectByLevel] = useState<Record<CEFRLevel, number>>({} as Record<CEFRLevel, number>);
   const [correctBySection, setCorrectBySection] = useState({ reading: 0, listening: 0 });
   const [finalLevel, setFinalLevel] = useState<CEFRLevel | null>(null);
   const [readingResult, setReadingResult] = useState<SectionResult | null>(null);
@@ -103,11 +118,13 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
   );
 
   function startTest() {
+    const nextAttempt = attemptIndex + 1;
+    setAttemptIndex(nextAttempt);
+    setQuiz(buildQuiz((nextAttempt % 2) as 0 | 1));
     setIndex(0);
     setSelected(null);
     setTextAnswer("");
     setTextAnswerFeedback(null);
-    setCorrectByLevel({} as Record<CEFRLevel, number>);
     setCorrectBySection({ reading: 0, listening: 0 });
     setFinalLevel(null);
     setReadingResult(null);
@@ -117,20 +134,7 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
     setStage("testing");
   }
 
-  function computeResult(tally: Record<CEFRLevel, number>, sectionTally: { reading: number; listening: number }) {
-    const results: LevelResult[] = levels.map((info) => {
-      const correct = tally[info.id] ?? 0;
-      const total = QUESTIONS_PER_LEVEL;
-      return { level: info.id, correct, total, passed: correct / total >= SKILL_PASS_RATIO };
-    });
-
-    let best: CEFRLevel | null = null;
-    for (const r of results) {
-      if (r.passed) best = r.level;
-      else break;
-    }
-    setFinalLevel(best);
-
+  function computeResult(sectionTally: { reading: number; listening: number }) {
     const readingTotal = levels.length * READING_QUESTIONS_PER_LEVEL;
     const listeningTotal = levels.length * LISTENING_QUESTIONS_PER_LEVEL;
     const readingScore = Math.round((sectionTally.reading / readingTotal) * 100);
@@ -148,6 +152,11 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
       band: scoreToBand(listeningScore),
     });
 
+    const overallCorrect = sectionTally.reading + sectionTally.listening;
+    const overallTotal = readingTotal + listeningTotal;
+    const overallScore = Math.round((overallCorrect / overallTotal) * 100);
+    setFinalLevel(mapOverallScoreToLevel(overallScore));
+
     setStage("writing");
   }
 
@@ -164,11 +173,11 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
   function submitAnswer(isCorrect: boolean, chosenLabel: string) {
     if (selected) return;
     setSelected(chosenLabel);
-    const nextTally = { ...correctByLevel };
+    // Stop any dialogue audio still playing from this question right away —
+    // it shouldn't keep talking into the next question's screen.
+    stopSpeech();
     const nextSectionTally = { ...correctBySection };
     if (isCorrect) {
-      nextTally[currentItem.level] = (nextTally[currentItem.level] ?? 0) + 1;
-      setCorrectByLevel(nextTally);
       nextSectionTally[currentItem.section] = nextSectionTally[currentItem.section] + 1;
       setCorrectBySection(nextSectionTally);
     }
@@ -181,7 +190,7 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
         setTextAnswer("");
         setTextAnswerFeedback(null);
       } else {
-        computeResult(nextTally, nextSectionTally);
+        computeResult(nextSectionTally);
       }
     }, 600);
   }
@@ -232,10 +241,10 @@ export default function PlacementTest({ placementLevel, onApplyPlacement }: Plac
               vựng) — trình duyệt sẽ ghi âm để bạn nghe lại.
             </p>
             <p>
-              ✅ Trình độ CEFR được tính từ phần Reading + Listening: mỗi cấp có 4 câu, đạt{" "}
-              <strong>{Math.round(SKILL_PASS_RATIO * 100)}%</strong> trở lên (từ 3/4 câu) ở tất cả các cấp liên
-              tiếp từ A1 thì trình độ của bạn được tính đến cấp cao nhất đạt.
+              ✅ Trình độ CEFR được tính từ <strong>tổng điểm</strong> phần Reading + Listening (số câu đúng trên
+              tổng 24 câu), quy đổi thẳng theo thang điểm sang cấp độ tương ứng.
             </p>
+            <p>🔁 Mỗi lần làm lại, toàn bộ câu hỏi Reading và Listening sẽ được đổi khác so với lần trước.</p>
             <p>
               🔓 Sau khi có kết quả, bạn có thể <strong>mở khóa lộ trình từ A1 đến cấp đó</strong> để học đúng ngay
               từ đầu.
