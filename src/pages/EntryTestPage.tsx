@@ -1,4 +1,15 @@
-import { ArrowLeft, CheckCircle2, ClipboardList, Mic, Sparkles } from "lucide-react";
+import { useState } from "react";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  ChevronDown,
+  ClipboardList,
+  FileCheck,
+  LayoutGrid,
+  Mic,
+  Shuffle,
+  Sparkles,
+} from "lucide-react";
 import PlacementTest from "../components/placement/PlacementTest";
 import type { CEFRLevel } from "../types";
 
@@ -21,6 +32,67 @@ const STEPS = [
     desc: "Xem lại toàn bộ 4 kỹ năng và mở khóa lộ trình học từ A1 đến đúng trình độ của bạn.",
   },
 ];
+
+const FEATURES = [
+  {
+    icon: LayoutGrid,
+    title: "Đủ 4 kỹ năng trong một lượt",
+    desc: "Đọc, Nghe (hội thoại 2 giọng thật), Viết và Nói (ghi âm giọng thật) — làm liền mạch như một bài thi thử, không cần quay lại nhiều lần.",
+  },
+  {
+    icon: FileCheck,
+    title: "Chấm theo nội dung thực tế",
+    desc: "Bài Viết và Nói được chấm dựa trên nội dung bạn thực sự viết/nói (độ dài, từ vựng, có đúng trọng tâm câu hỏi) — không phải cứ nộp bài là tính đạt.",
+  },
+  {
+    icon: Shuffle,
+    title: "Không lặp đề khi làm lại",
+    desc: "Mỗi lần bấm làm lại, toàn bộ câu hỏi Đọc và Nghe được đổi sang một bộ đề khác để bạn luyện tập thoải mái.",
+  },
+];
+
+const FAQS = [
+  {
+    q: "Bài test này có mất phí không?",
+    a: "Hoàn toàn miễn phí, không cần đăng ký tài khoản, và không giới hạn số lần làm lại.",
+  },
+  {
+    q: "Kết quả có đáng tin cậy không?",
+    a: "Phần Đọc và Nghe được chấm đúng/sai khách quan theo đáp án. Phần Viết và Nói dùng thuật toán tự động phân tích nội dung (độ dài, từ vựng, có đúng trọng tâm câu hỏi) — hữu ích để bạn tự đánh giá và định hướng học, nhưng không thay thế hoàn toàn một giám khảo thật.",
+  },
+  {
+    q: "Tôi cần chuẩn bị gì trước khi làm bài?",
+    a: "Chỉ cần trình duyệt hỗ trợ ghi âm (khuyên dùng Chrome hoặc Edge) và cho phép quyền truy cập micro khi đến phần Nói. Không cần tài khoản hay cài đặt gì thêm.",
+  },
+  {
+    q: "Bài test kéo dài bao lâu?",
+    a: "Khoảng 15–20 phút cho đủ cả 4 phần: Đọc, Nghe, Viết, Nói.",
+  },
+];
+
+function FaqAccordion() {
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
+
+  return (
+    <div className="mx-auto max-w-3xl space-y-3">
+      {FAQS.map((item, i) => {
+        const isOpen = openIndex === i;
+        return (
+          <div key={item.q} className="overflow-hidden rounded-2xl border border-brand-100 bg-white">
+            <button
+              onClick={() => setOpenIndex(isOpen ? null : i)}
+              className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left font-semibold text-brand-900"
+            >
+              {item.q}
+              <ChevronDown className={`h-5 w-5 shrink-0 text-brand-500 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+            </button>
+            {isOpen && <p className="border-t border-brand-50 px-5 py-4 text-sm leading-relaxed text-brand-900/70">{item.a}</p>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 interface EntryTestPageProps {
   placementLevel: CEFRLevel | null;
@@ -110,7 +182,33 @@ export default function EntryTestPage({ placementLevel, onApplyPlacement }: Entr
         </div>
       </section>
 
+      <section className="mx-auto max-w-6xl px-6 py-16">
+        <h2 className="text-center font-display text-2xl font-bold text-brand-900 sm:text-3xl">
+          Vì sao nên làm bài test này
+        </h2>
+        <div className="mt-10 grid gap-6 sm:grid-cols-3">
+          {FEATURES.map((feature) => (
+            <div key={feature.title} className="rounded-2xl border border-brand-100 bg-white p-6">
+              <span className="inline-flex rounded-full bg-brand-50 p-3 text-brand-600">
+                <feature.icon className="h-6 w-6" />
+              </span>
+              <h3 className="mt-4 font-display font-bold text-brand-900">{feature.title}</h3>
+              <p className="mt-2 text-sm text-brand-900/60">{feature.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <PlacementTest placementLevel={placementLevel} onApplyPlacement={onApplyPlacement} />
+
+      <section className="border-t border-brand-100 bg-white px-6 py-16">
+        <h2 className="text-center font-display text-2xl font-bold text-brand-900 sm:text-3xl">
+          Các câu hỏi thường gặp
+        </h2>
+        <div className="mt-10">
+          <FaqAccordion />
+        </div>
+      </section>
 
       <footer className="border-t border-brand-100 py-8 text-center text-sm text-brand-900/50">
         <a href="#top" className="font-semibold text-brand-600 hover:text-brand-700">
