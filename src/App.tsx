@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import Roadmap from "./components/roadmap/Roadmap";
@@ -8,6 +8,7 @@ import GrammarTips from "./components/GrammarTips";
 import Footer from "./components/Footer";
 import EntryTestPage from "./pages/EntryTestPage";
 import SpeakingRoomPage from "./pages/SpeakingRoomPage";
+import ContactWidget from "./components/ContactWidget";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useLevelProgress } from "./hooks/useLevelProgress";
 import { vocabulary } from "./data/vocabulary";
@@ -46,31 +47,37 @@ function App() {
 
   const topicKnownCount = knownIds.filter((id) => vocabulary.some((w) => w.id === id)).length;
 
+  let page: ReactNode;
   if (route === ENTRY_TEST_ROUTE) {
-    return <EntryTestPage placementLevel={placementLevel} onApplyPlacement={applyPlacement} />;
-  }
-
-  if (route === SPEAKING_ROOM_ROUTE) {
-    return <SpeakingRoomPage />;
+    page = <EntryTestPage placementLevel={placementLevel} onApplyPlacement={applyPlacement} />;
+  } else if (route === SPEAKING_ROOM_ROUTE) {
+    page = <SpeakingRoomPage />;
+  } else {
+    page = (
+      <div className="min-h-screen bg-[#f7fbf9]">
+        <Navbar knownCount={topicKnownCount} totalCount={vocabulary.length} />
+        <main>
+          <Hero />
+          <Roadmap
+            progress={progress}
+            knownIds={levelKnownIds}
+            onToggleKnown={toggleLevelKnown}
+            onRecordScore={recordScore}
+          />
+          <Flashcards knownIds={knownIds} onToggleKnown={handleToggleKnown} />
+          <Quiz />
+          <GrammarTips />
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-[#f7fbf9]">
-      <Navbar knownCount={topicKnownCount} totalCount={vocabulary.length} />
-      <main>
-        <Hero />
-        <Roadmap
-          progress={progress}
-          knownIds={levelKnownIds}
-          onToggleKnown={toggleLevelKnown}
-          onRecordScore={recordScore}
-        />
-        <Flashcards knownIds={knownIds} onToggleKnown={handleToggleKnown} />
-        <Quiz />
-        <GrammarTips />
-      </main>
-      <Footer />
-    </div>
+    <>
+      {page}
+      <ContactWidget />
+    </>
   );
 }
 
