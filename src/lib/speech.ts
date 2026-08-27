@@ -1,9 +1,61 @@
+// Known-good, standard-accent, clearly-enunciating system voices, ordered by
+// preference. Browsers otherwise fall back to whatever voice happens to be
+// first/default, which is often a lower-quality or oddly-accented one —
+// picking from this list is what actually fixes "khó nghe, hay bị vấp".
+const PREFERRED_VOICE_NAMES = [
+  "Google US English",
+  "Microsoft Ava Online (Natural)",
+  "Microsoft Aria Online (Natural)",
+  "Microsoft Emma Online (Natural)",
+  "Microsoft Guy Online (Natural)",
+  "Microsoft Andrew Online (Natural)",
+  "Samantha",
+  "Daniel",
+  "Microsoft Zira",
+  "Microsoft David",
+  "Google UK English Female",
+  "Google UK English Male",
+];
+
+const FEMALE_VOICE_HINTS = ["female", "zira", "samantha", "victoria", "susan", "karen", "moira", "tessa", "fiona", "aria", "ava", "emma"];
+const MALE_VOICE_HINTS = ["male", "david", "daniel", "alex", "fred", "george", "james", "arthur", "guy", "andrew"];
+
+function getEnglishVoices(): SpeechSynthesisVoice[] {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return [];
+  return window.speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().startsWith("en"));
+}
+
+// Voices often load asynchronously after the page becomes interactive;
+// touching getVoices() early nudges the browser to have them ready well
+// before the learner clicks a play button.
+if (typeof window !== "undefined" && "speechSynthesis" in window) {
+  window.speechSynthesis.getVoices();
+}
+
+function pickClearVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined {
+  if (voices.length === 0) return undefined;
+  for (const name of PREFERRED_VOICE_NAMES) {
+    const match = voices.find((v) => v.name === name || v.name.includes(name));
+    if (match) return match;
+  }
+  return voices.find((v) => v.default) ?? voices[0];
+}
+
+// Chrome can silently clip or drop an utterance spoken immediately after
+// cancel() — a known Web Speech API quirk. A short delay before the actual
+// speak() call is the standard workaround for that "vấp" (stutter/cut-off)
+// at the start of playback.
+const RESTART_DELAY_MS = 30;
+
 export function speak(text: string, lang = "en-US") {
-  if (!("speechSynthesis" in window)) return;
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = lang;
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utterance);
+  utterance.rate = 0.9;
+  const voice = pickClearVoice(getEnglishVoices());
+  if (voice) utterance.voice = voice;
+  window.setTimeout(() => window.speechSynthesis.speak(utterance), RESTART_DELAY_MS);
 }
 
 export interface DialogueLine {
@@ -11,46 +63,45 @@ export interface DialogueLine {
   text: string;
 }
 
-const FEMALE_VOICE_HINTS = ["female", "zira", "samantha", "victoria", "susan", "karen", "moira", "tessa", "fiona"];
-const MALE_VOICE_HINTS = ["male", "david", "daniel", "alex", "fred", "george", "james", "arthur"];
-
-// Best-effort: pick two distinct, common English system voices (ideally one
-// male, one female) so a dialogue's two speakers actually sound different,
-// not just the same voice at a different pitch. Falls back to undefined when
-// the browser hasn't exposed any voices yet (speakDialogue then falls back
-// to pitch-only differentiation on a single default voice).
+// Best-effort: pick two distinct, clear English system voices (ideally one
+// male, one female, both from the preferred/clear list) so a dialogue's two
+// speakers actually sound different, not just the same voice at a different
+// pitch. Falls back to undefined when the browser hasn't exposed any voices
+// yet (speakDialogue then falls back to pitch-only differentiation).
 function pickDialogueVoices(): { a?: SpeechSynthesisVoice; b?: SpeechSynthesisVoice } {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return {};
-  const voices = window.speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().startsWith("en"));
+  const voices = getEnglishVoices();
   if (voices.length === 0) return {};
   const female = voices.find((v) => FEMALE_VOICE_HINTS.some((h) => v.name.toLowerCase().includes(h)));
   const male = voices.find((v) => MALE_VOICE_HINTS.some((h) => v.name.toLowerCase().includes(h)));
   if (female && male && female.name !== male.name) return { a: female, b: male };
-  if (voices.length >= 2) return { a: voices[0], b: voices[1] };
-  return { a: voices[0], b: voices[0] };
+  const primary = pickClearVoice(voices);
+  const secondary = voices.find((v) => v.name !== primary?.name) ?? primary;
+  return { a: primary, b: secondary };
 }
 
 // Plays a short two-person dialogue as a queued sequence of utterances (the
 // Web Speech API plays speak() calls back-to-back when cancel() isn't called
-// in between). Uses two distinct system voices when available (common,
-// clear, natural-sounding — not pitch-shifted) so the speakers are easy to
-// tell apart, with a slightly slower rate for clarity.
+// in between). Uses two distinct, clear system voices when available (not
+// pitch-shifted) so the speakers are easy to tell apart, with a slightly
+// slower rate for clarity.
 export function speakDialogue(lines: DialogueLine[], lang = "en-US") {
-  if (!("speechSynthesis" in window)) return;
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel();
   const { a, b } = pickDialogueVoices();
   const hasDistinctVoices = !!a && !!b && a.name !== b.name;
-  for (const line of lines) {
-    const utterance = new SpeechSynthesisUtterance(line.text);
-    utterance.lang = lang;
-    utterance.rate = 0.95;
-    const voice = line.speaker === "A" ? a : b;
-    if (voice) utterance.voice = voice;
-    // Only fall back to pitch-shifting when we couldn't find two distinct
-    // system voices — a real voice difference sounds far more natural.
-    utterance.pitch = hasDistinctVoices ? 1 : line.speaker === "A" ? 1 : 1.2;
-    window.speechSynthesis.speak(utterance);
-  }
+  window.setTimeout(() => {
+    for (const line of lines) {
+      const utterance = new SpeechSynthesisUtterance(line.text);
+      utterance.lang = lang;
+      utterance.rate = 0.92;
+      const voice = line.speaker === "A" ? a : b;
+      if (voice) utterance.voice = voice;
+      // Only fall back to pitch-shifting when we couldn't find two distinct
+      // system voices — a real voice difference sounds far more natural.
+      utterance.pitch = hasDistinctVoices ? 1 : line.speaker === "A" ? 1 : 1.2;
+      window.speechSynthesis.speak(utterance);
+    }
+  }, RESTART_DELAY_MS);
 }
 
 export function stopSpeech() {

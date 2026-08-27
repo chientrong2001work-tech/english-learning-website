@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, RotateCcw, Shuffle, Volume2, X } from "lucide-react";
 import { categories } from "../data/categories";
 import { vocabulary } from "../data/vocabulary";
+import { speak } from "../lib/speech";
 import type { CategoryId } from "../types";
 
 interface FlashcardsProps {
@@ -52,14 +53,6 @@ export default function Flashcards({ knownIds, onToggleKnown }: FlashcardsProps)
     setOrder(shuffle(vocabulary.map((w) => w.id)));
     setIndex(0);
     setFlipped(false);
-  }
-
-  function speak(text: string) {
-    if (!("speechSynthesis" in window)) return;
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-US";
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
   }
 
   if (!currentWord) return null;
