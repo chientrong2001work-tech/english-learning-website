@@ -7,11 +7,13 @@ import Quiz from "./components/Quiz";
 import GrammarTips from "./components/GrammarTips";
 import Footer from "./components/Footer";
 import EntryTestPage from "./pages/EntryTestPage";
+import SpeakingRoomPage from "./pages/SpeakingRoomPage";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useLevelProgress } from "./hooks/useLevelProgress";
 import { vocabulary } from "./data/vocabulary";
 
 const ENTRY_TEST_ROUTE = "#/kiem-tra-dau-vao";
+const SPEAKING_ROOM_ROUTE = "#/phong-speaking-ao";
 
 function App() {
   const [route, setRoute] = useState(() => window.location.hash);
@@ -46,6 +48,10 @@ function App() {
 
   if (route === ENTRY_TEST_ROUTE) {
     return <EntryTestPage placementLevel={placementLevel} onApplyPlacement={applyPlacement} />;
+  }
+
+  if (route === SPEAKING_ROOM_ROUTE) {
+    return <SpeakingRoomPage />;
   }
 
   return (

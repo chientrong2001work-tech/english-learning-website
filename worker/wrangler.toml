@@ -1,0 +1,12 @@
+name = "engup-speaking-room"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+[vars]
+# Restrict CORS to your deployed frontend origin. Change if you fork/rename the
+# GitHub Pages site or use a custom domain.
+ALLOWED_ORIGIN = "https://chientrong2001work-tech.github.io"
+
+# The Anthropic API key is NOT set here. Set it as a secret instead, which
+# keeps it out of source control entirely:
+#   wrangler secret put ANTHROPIC_API_KEY

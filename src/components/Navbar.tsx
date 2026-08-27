@@ -2,6 +2,7 @@ import { GraduationCap, Flame } from "lucide-react";
 
 const navLinks = [
   { href: "#/kiem-tra-dau-vao", label: "Test trình độ" },
+  { href: "#/phong-speaking-ao", label: "Phòng Speaking ảo" },
   { href: "#roadmap", label: "Lộ trình CEFR" },
   { href: "#flashcards", label: "Từ vựng" },
   { href: "#quiz", label: "Luyện tập" },
