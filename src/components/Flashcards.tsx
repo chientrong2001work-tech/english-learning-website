@@ -111,11 +111,11 @@ export default function Flashcards({ knownIds, onToggleKnown }: FlashcardsProps)
       </div>
 
       <div className="mb-14">
-        <div className="mb-4 text-center">
+        <div className="mb-1 text-center">
           <p className="font-display text-xl font-bold text-brand-900">Học từ vựng theo chữ cái</p>
           <p className="text-sm text-brand-900/60">Bấm vào chữ cái bạn muốn học</p>
         </div>
-        <div className="mx-auto aspect-[3/1] w-full max-w-4xl">
+        <div className="mx-auto h-44 w-full max-w-4xl sm:h-56">
           <MarqueeAlongSvgPath
             path={ALPHABET_PATH_D}
             viewBox="0 0 996 330"
@@ -133,7 +133,7 @@ export default function Flashcards({ knownIds, onToggleKnown }: FlashcardsProps)
                 key={letter}
                 type="button"
                 onClick={() => handleLetterClick(letter)}
-                className={`flex h-12 w-12 items-center justify-center rounded-xl text-lg font-bold text-white shadow-md transition duration-300 ease-in-out hover:scale-150 ${LETTER_COLORS[i % LETTER_COLORS.length]}`}
+                className={`flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold text-white shadow-md transition duration-300 ease-in-out hover:scale-150 sm:h-12 sm:w-12 sm:rounded-xl sm:text-lg ${LETTER_COLORS[i % LETTER_COLORS.length]}`}
               >
                 {letter}
               </button>

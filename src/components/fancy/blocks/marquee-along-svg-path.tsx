@@ -107,12 +107,16 @@ export default function MarqueeAlongSvgPath({
   }, [positionItems, scale]);
 
   function handlePan(_: unknown, info: PanInfo) {
-    if (!draggable) return;
     progress.set(progress.get() - info.delta.x * dragSensitivity);
   }
 
+  // The pan gesture lives on the *outer* container itself (not a separate
+  // overlay) so it still fires when a drag starts on top of a letter
+  // button, not just on the empty space between them — framer-motion only
+  // treats it as a pan once the pointer has actually moved past a small
+  // threshold, so a plain tap on a letter still reaches its onClick.
   return (
-    <div
+    <motion.div
       ref={containerRef}
       className={className}
       style={{
@@ -122,9 +126,9 @@ export default function MarqueeAlongSvgPath({
       }}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
-      onPointerDown={() => draggable && setIsDragging(true)}
-      onPointerUp={() => setIsDragging(false)}
-      onPointerCancel={() => setIsDragging(false)}
+      onPanStart={draggable ? () => setIsDragging(true) : undefined}
+      onPan={draggable ? handlePan : undefined}
+      onPanEnd={draggable ? () => setIsDragging(false) : undefined}
     >
       <svg
         viewBox={viewBox}
@@ -134,10 +138,6 @@ export default function MarqueeAlongSvgPath({
       >
         <path ref={pathRef} d={path} fill="none" stroke="none" />
       </svg>
-
-      {draggable && (
-        <MarqueeDragSurface onPan={handlePan} onPanEnd={() => setIsDragging(false)} />
-      )}
 
       {Array.from({ length: itemCount }, (_, i) => (
         <div
@@ -150,27 +150,6 @@ export default function MarqueeAlongSvgPath({
           {childArray[i % childCount]}
         </div>
       ))}
-    </div>
-  );
-}
-
-// A separate absolutely-positioned surface handles the drag gesture via
-// framer-motion's pan recognizer, kept out of the main div so the marquee
-// itself never needs to be a `motion.div` (avoids re-render on every drag
-// frame — position updates go straight to refs in the parent).
-function MarqueeDragSurface({
-  onPan,
-  onPanEnd,
-}: {
-  onPan: (event: unknown, info: PanInfo) => void;
-  onPanEnd: () => void;
-}) {
-  return (
-    <motion.div
-      className="absolute inset-0"
-      onPan={onPan}
-      onPanEnd={onPanEnd}
-      style={{ touchAction: "none" }}
-    />
+    </motion.div>
   );
 }
