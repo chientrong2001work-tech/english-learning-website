@@ -104,14 +104,14 @@ export default function Flashcards({ knownIds, onToggleKnown }: FlashcardsProps)
 
   return (
     <section id="flashcards" className="mx-auto max-w-4xl px-6 py-20">
-      <div className="mb-10 text-center">
+      <div className="mb-3 text-center">
         <h2 className="font-display text-3xl font-bold text-brand-900">
           Flashcard từ vựng
         </h2>
       </div>
 
       <div className="mb-14">
-        <div className="mb-5 text-center">
+        <div className="mb-8 text-center">
           <p className="font-display text-xl font-bold text-brand-900">Học từ vựng theo chữ cái</p>
           <p className="text-sm text-brand-900/60">Bấm vào chữ cái bạn muốn học</p>
         </div>
