@@ -111,11 +111,11 @@ export default function Flashcards({ knownIds, onToggleKnown }: FlashcardsProps)
       </div>
 
       <div className="mb-14">
-        <div className="mb-1 text-center">
+        <div className="mb-5 text-center">
           <p className="font-display text-xl font-bold text-brand-900">Học từ vựng theo chữ cái</p>
           <p className="text-sm text-brand-900/60">Bấm vào chữ cái bạn muốn học</p>
         </div>
-        <div className="mx-auto h-44 w-full max-w-4xl sm:h-56">
+        <div className="mx-auto h-48 w-full max-w-4xl sm:h-60">
           <MarqueeAlongSvgPath
             path={ALPHABET_PATH_D}
             viewBox="0 0 996 330"
