@@ -57,7 +57,6 @@ export default function Flashcards({ knownIds, onToggleKnown }: FlashcardsProps)
   const [letterFilter, setLetterFilter] = useState<string | null>(null);
   const [letterOrder, setLetterOrder] = useState<string[]>([]);
   const [letterIndex, setLetterIndex] = useState(0);
-  const [letterKnown, setLetterKnown] = useState<Set<string>>(new Set());
 
   const letterPool = useMemo(() => {
     if (!letterFilter) return [];
@@ -109,20 +108,18 @@ export default function Flashcards({ knownIds, onToggleKnown }: FlashcardsProps)
         <h2 className="font-display text-3xl font-bold text-brand-900">
           Flashcard từ vựng
         </h2>
-        <p className="mt-2 text-brand-900/60">
-          Chọn đúng nghĩa của từ để đánh dấu bạn đã thuộc từ đó chưa.
-        </p>
       </div>
 
       <div className="mb-14">
-        <p className="mb-4 text-center text-sm font-semibold text-brand-900/60">
-          Hoặc bấm vào một chữ cái để ôn tất cả từ vựng Oxford 3000 bắt đầu bằng chữ đó
-        </p>
+        <div className="mb-4 text-center">
+          <p className="font-display text-xl font-bold text-brand-900">Học từ vựng theo chữ cái</p>
+          <p className="text-sm text-brand-900/60">Bấm vào chữ cái bạn muốn học</p>
+        </div>
         <div className="mx-auto aspect-[3/1] w-full max-w-4xl">
           <MarqueeAlongSvgPath
             path={ALPHABET_PATH_D}
             viewBox="0 0 996 330"
-            baseVelocity={8}
+            baseVelocity={16}
             slowdownOnHover
             draggable
             repeat={1}
@@ -152,15 +149,8 @@ export default function Flashcards({ knownIds, onToggleKnown }: FlashcardsProps)
                   key={currentLetterWord.id}
                   word={currentLetterWord}
                   pool={letterPool}
-                  isKnown={letterKnown.has(currentLetterWord.id)}
-                  onAnswered={(correct) =>
-                    setLetterKnown((prev) => {
-                      const next = new Set(prev);
-                      if (correct) next.add(currentLetterWord.id);
-                      else next.delete(currentLetterWord.id);
-                      return next;
-                    })
-                  }
+                  isKnown={knownIds.includes(currentLetterWord.id)}
+                  onAnswered={(correct) => onToggleKnown(currentLetterWord.id, correct)}
                   onNext={handleLetterNext}
                 />
                 <div className="mt-6 flex flex-wrap items-center justify-center gap-3">

@@ -46,8 +46,11 @@ export interface LevelProgress {
   unlocked: boolean;
 }
 
-export function useLevelProgress() {
-  const [knownIds, setKnownIds] = useLocalStorage<string[]>("engup-known-words", []);
+// `knownIds` is the single source of truth for every "known word" across
+// the whole site (topic flashcards, CEFR levels, letter review) — it lives
+// in App.tsx and is passed in here rather than owned by this hook, so this
+// hook's level progress and the navbar's site-wide count never diverge.
+export function useLevelProgress(knownIds: string[]) {
   const [levelScores, setLevelScores] = useLocalStorage<LevelScoresMap>(
     "engup-level-scores",
     createEmptyScores(),
@@ -63,15 +66,6 @@ export function useLevelProgress() {
       const prevIndex = levels.findIndex((l) => l.id === prev);
       const nextIndex = levels.findIndex((l) => l.id === level);
       return nextIndex > prevIndex ? level : prev;
-    });
-  }
-
-  function toggleKnown(id: string, known: boolean) {
-    setKnownIds((prev) => {
-      if (known) {
-        return prev.includes(id) ? prev : [...prev, id];
-      }
-      return prev.filter((wordId) => wordId !== id);
     });
   }
 
@@ -129,5 +123,5 @@ export function useLevelProgress() {
     previousPassed = levelPassed;
   }
 
-  return { knownIds, toggleKnown, recordScore, progress, placementLevel, applyPlacement };
+  return { recordScore, progress, placementLevel, applyPlacement };
 }

@@ -12,6 +12,10 @@ import ContactWidget from "./components/ContactWidget";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useLevelProgress } from "./hooks/useLevelProgress";
 import { vocabulary } from "./data/vocabulary";
+import { levelVocabulary } from "./data/levelVocabulary";
+
+const ALL_VOCAB_IDS = new Set([...vocabulary.map((w) => w.id), ...levelVocabulary.map((w) => w.id)]);
+const TOTAL_VOCAB_COUNT = vocabulary.length + levelVocabulary.length;
 
 const ENTRY_TEST_ROUTE = "#/kiem-tra-dau-vao";
 const SPEAKING_ROOM_ROUTE = "#/phong-speaking-ao";
@@ -19,14 +23,7 @@ const SPEAKING_ROOM_ROUTE = "#/phong-speaking-ao";
 function App() {
   const [route, setRoute] = useState(() => window.location.hash);
   const [knownIds, setKnownIds] = useLocalStorage<string[]>("engup-known-words", []);
-  const {
-    knownIds: levelKnownIds,
-    toggleKnown: toggleLevelKnown,
-    recordScore,
-    progress,
-    placementLevel,
-    applyPlacement,
-  } = useLevelProgress();
+  const { recordScore, progress, placementLevel, applyPlacement } = useLevelProgress(knownIds);
 
   useEffect(() => {
     function handleHashChange() {
@@ -45,7 +42,7 @@ function App() {
     });
   }
 
-  const topicKnownCount = knownIds.filter((id) => vocabulary.some((w) => w.id === id)).length;
+  const totalKnownCount = knownIds.filter((id) => ALL_VOCAB_IDS.has(id)).length;
 
   let page: ReactNode;
   if (route === ENTRY_TEST_ROUTE) {
@@ -55,13 +52,13 @@ function App() {
   } else {
     page = (
       <div className="min-h-screen bg-[#f7fbf9]">
-        <Navbar knownCount={topicKnownCount} totalCount={vocabulary.length} />
+        <Navbar knownCount={totalKnownCount} totalCount={TOTAL_VOCAB_COUNT} />
         <main>
           <Hero />
           <Roadmap
             progress={progress}
-            knownIds={levelKnownIds}
-            onToggleKnown={toggleLevelKnown}
+            knownIds={knownIds}
+            onToggleKnown={handleToggleKnown}
             onRecordScore={recordScore}
           />
           <Flashcards knownIds={knownIds} onToggleKnown={handleToggleKnown} />
