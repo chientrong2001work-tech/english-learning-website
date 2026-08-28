@@ -1,15 +1,36 @@
 import { useMemo, useState } from "react";
-import { Shuffle } from "lucide-react";
+import { Shuffle, X } from "lucide-react";
 import { categories } from "../data/categories";
 import { vocabulary } from "../data/vocabulary";
+import { levelVocabulary } from "../data/levelVocabulary";
 import { shuffle } from "../lib/array";
 import VocabQuizCard from "./VocabQuizCard";
+import MarqueeAlongSvgPath from "./fancy/blocks/marquee-along-svg-path";
 import type { CategoryId } from "../types";
 
 interface FlashcardsProps {
   knownIds: string[];
   onToggleKnown: (id: string, known: boolean) => void;
 }
+
+const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+const LETTER_COLORS = [
+  "bg-brand-500",
+  "bg-emerald-500",
+  "bg-teal-500",
+  "bg-cyan-600",
+  "bg-sky-500",
+  "bg-indigo-500",
+  "bg-violet-500",
+  "bg-fuchsia-500",
+  "bg-pink-500",
+  "bg-rose-500",
+  "bg-orange-500",
+  "bg-amber-500",
+  "bg-lime-600",
+];
+const ALPHABET_PATH_D =
+  "M1 209.434C58.5872 255.935 387.926 325.938 482.583 209.434C600.905 63.8051 525.516 -43.2211 427.332 19.9613C329.149 83.1436 352.902 242.723 515.041 267.302C644.752 286.966 943.56 181.94 995 156.5";
 
 export default function Flashcards({ knownIds, onToggleKnown }: FlashcardsProps) {
   const [activeCategory, setActiveCategory] = useState<CategoryId | "all">("all");
@@ -32,6 +53,39 @@ export default function Flashcards({ knownIds, onToggleKnown }: FlashcardsProps)
     () => vocabulary.filter((w) => activeCategory === "all" || w.category === activeCategory),
     [activeCategory],
   );
+
+  const [letterFilter, setLetterFilter] = useState<string | null>(null);
+  const [letterOrder, setLetterOrder] = useState<string[]>([]);
+  const [letterIndex, setLetterIndex] = useState(0);
+  const [letterKnown, setLetterKnown] = useState<Set<string>>(new Set());
+
+  const letterPool = useMemo(() => {
+    if (!letterFilter) return [];
+    return levelVocabulary.filter((w) => w.word.trim()[0]?.toUpperCase() === letterFilter);
+  }, [letterFilter]);
+
+  const currentLetterId = letterOrder[letterIndex % letterOrder.length];
+  const currentLetterWord = letterPool.find((w) => w.id === currentLetterId);
+
+  function handleLetterClick(letter: string) {
+    const pool = levelVocabulary.filter((w) => w.word.trim()[0]?.toUpperCase() === letter);
+    setLetterFilter(letter);
+    setLetterOrder(shuffle(pool.map((w) => w.id)));
+    setLetterIndex(0);
+  }
+
+  function handleLetterNext() {
+    setLetterIndex((prev) => (letterOrder.length ? (prev + 1) % letterOrder.length : 0));
+  }
+
+  function handleLetterShuffle() {
+    setLetterOrder(shuffle(letterPool.map((w) => w.id)));
+    setLetterIndex(0);
+  }
+
+  function closeLetterReview() {
+    setLetterFilter(null);
+  }
 
   function goToNext() {
     setIndex((prev) => (filteredIds.length ? (prev + 1) % filteredIds.length : 0));
@@ -58,6 +112,93 @@ export default function Flashcards({ knownIds, onToggleKnown }: FlashcardsProps)
         <p className="mt-2 text-brand-900/60">
           Chọn đúng nghĩa của từ để đánh dấu bạn đã thuộc từ đó chưa.
         </p>
+      </div>
+
+      <div className="mb-14">
+        <p className="mb-4 text-center text-sm font-semibold text-brand-900/60">
+          Hoặc bấm vào một chữ cái để ôn tất cả từ vựng Oxford 3000 bắt đầu bằng chữ đó
+        </p>
+        <div className="mx-auto aspect-[3/1] w-full max-w-4xl">
+          <MarqueeAlongSvgPath
+            path={ALPHABET_PATH_D}
+            viewBox="0 0 996 330"
+            baseVelocity={8}
+            slowdownOnHover
+            draggable
+            repeat={1}
+            dragSensitivity={0.6}
+            className="h-full w-full"
+            responsive
+            grabCursor
+          >
+            {ALPHABET.map((letter, i) => (
+              <button
+                key={letter}
+                type="button"
+                onClick={() => handleLetterClick(letter)}
+                className={`flex h-12 w-12 items-center justify-center rounded-xl text-lg font-bold text-white shadow-md transition duration-300 ease-in-out hover:scale-150 ${LETTER_COLORS[i % LETTER_COLORS.length]}`}
+              >
+                {letter}
+              </button>
+            ))}
+          </MarqueeAlongSvgPath>
+        </div>
+
+        {letterFilter && (
+          <div className="mt-6">
+            {currentLetterWord ? (
+              <>
+                <VocabQuizCard
+                  key={currentLetterWord.id}
+                  word={currentLetterWord}
+                  pool={letterPool}
+                  isKnown={letterKnown.has(currentLetterWord.id)}
+                  onAnswered={(correct) =>
+                    setLetterKnown((prev) => {
+                      const next = new Set(prev);
+                      if (correct) next.add(currentLetterWord.id);
+                      else next.delete(currentLetterWord.id);
+                      return next;
+                    })
+                  }
+                  onNext={handleLetterNext}
+                />
+                <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                  <button
+                    onClick={handleLetterShuffle}
+                    className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-5 py-2.5 font-semibold text-brand-700 transition hover:bg-brand-50"
+                  >
+                    <Shuffle className="h-4 w-4" />
+                    Xáo trộn
+                  </button>
+                  <button
+                    onClick={closeLetterReview}
+                    className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-5 py-2.5 font-semibold text-brand-700 transition hover:bg-brand-50"
+                  >
+                    <X className="h-4 w-4" />
+                    Đóng ôn theo chữ cái
+                  </button>
+                </div>
+                <p className="mt-4 text-center text-sm text-brand-900/40">
+                  Chữ {letterFilter}: {(letterIndex % letterOrder.length) + 1} / {letterOrder.length} từ
+                </p>
+              </>
+            ) : (
+              <div className="text-center">
+                <p className="text-brand-900/60">
+                  Không có từ nào trong bộ Oxford 3000 bắt đầu bằng chữ "{letterFilter}".
+                </p>
+                <button
+                  onClick={closeLetterReview}
+                  className="mt-4 inline-flex items-center gap-2 rounded-full border border-brand-200 px-5 py-2.5 font-semibold text-brand-700 transition hover:bg-brand-50"
+                >
+                  <X className="h-4 w-4" />
+                  Đóng
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="mb-8 flex flex-wrap items-center justify-center gap-2">
