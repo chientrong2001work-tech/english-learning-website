@@ -1,4 +1,6 @@
 import { Sparkles, Trophy, BookOpen } from "lucide-react";
+import { LayoutGroup, motion } from "framer-motion";
+import TextRotate from "./fancy/text/text-rotate";
 
 export default function Hero() {
   return (
@@ -39,6 +41,29 @@ export default function Hero() {
             Luyện từ vựng tự do
           </a>
         </div>
+
+        <LayoutGroup>
+          <motion.p
+            layout
+            className="flex flex-wrap items-center justify-center whitespace-pre pt-4 text-xl font-semibold text-brand-900 sm:text-2xl"
+          >
+            <motion.span layout transition={{ type: "spring", damping: 30, stiffness: 400 }}>
+              Học tiếng Anh{" "}
+            </motion.span>
+            <TextRotate
+              texts={["hiệu quả!", "dễ dàng", "miễn phí", "mọi lúc, mọi nơi", "vui vẻ 🎉"]}
+              mainClassName="justify-center overflow-hidden rounded-lg bg-brand-500 px-3 py-1 text-white"
+              staggerFrom="last"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "-120%" }}
+              staggerDuration={0.025}
+              splitLevelClassName="overflow-hidden pb-1"
+              transition={{ type: "spring", damping: 30, stiffness: 400 }}
+              rotationInterval={2000}
+            />
+          </motion.p>
+        </LayoutGroup>
       </div>
     </section>
   );
