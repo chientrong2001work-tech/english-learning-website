@@ -120,14 +120,29 @@ export function stopSpeech() {
   }
 }
 
-const COMBINING_DIACRITICS = /[̀-ͯ]/g;
+// Only the 5 Vietnamese *tone* marks (sắc, huyền, hỏi, ngã, nặng) — not the
+// vowel-shape diacritics (breve/circumflex/horn for ă, â, ê, ô, ơ, ư). Those
+// change which vowel a word actually is, so stripping them collapses
+// distinct words together: "mưa" (rain), "mùa" (season) and "mua" (buy) all
+// used to normalize to the same "mua", making search match all three for
+// any one of them.
+const COMBINING_TONE_MARKS = /[\u0300\u0301\u0303\u0309\u0323]/g;
+// After stripping tone marks, re-compose so ư/ơ/â/ê/ô/ă go back to a single
+// codepoint (NFC) instead of staying as base+combining-mark pairs — the
+// final character filter below only keeps ASCII a-z/0-9 plus these specific
+// Vietnamese vowel letters, so a decomposed "u" + combining horn would
+// otherwise have its horn silently dropped by that filter, undoing the
+// distinction this whole function exists to preserve.
+const ALLOWED_CHARS = /[^a-z0-9\săâêôơư]/g;
 
 export function normalizeText(text: string): string {
   return text
     .toLowerCase()
+    .replace(/đ/g, "d")
     .normalize("NFD")
-    .replace(COMBINING_DIACRITICS, "")
-    .replace(/[^a-z0-9\s]/g, "")
+    .replace(COMBINING_TONE_MARKS, "")
+    .normalize("NFC")
+    .replace(ALLOWED_CHARS, "")
     .trim()
     .replace(/\s+/g, " ");
 }
