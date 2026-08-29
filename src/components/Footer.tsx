@@ -9,6 +9,7 @@ export default function Footer() {
           EngUp
         </div>
         <p>Học một chút mỗi ngày, tiến bộ mỗi tuần. Chúc bạn học vui!</p>
+        <p className="text-xs text-brand-900/40">Được phát triển bởi Trọng Chiến</p>
       </div>
     </footer>
   );
