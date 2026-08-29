@@ -10,6 +10,7 @@ import Footer from "./components/Footer";
 import EntryTestPage from "./pages/EntryTestPage";
 import SpeakingRoomPage from "./pages/SpeakingRoomPage";
 import ContactWidget from "./components/ContactWidget";
+import InstallBanner from "./components/InstallBanner";
 import LoginScreen from "./components/auth/LoginScreen";
 import AccessDeniedScreen from "./components/auth/AccessDeniedScreen";
 import AdminPage from "./pages/AdminPage";
@@ -77,6 +78,7 @@ function AppContent() {
   } else {
     page = (
       <div className="min-h-screen bg-[#f7fbf9]">
+        <InstallBanner />
         <Navbar knownCount={totalKnownCount} totalCount={TOTAL_VOCAB_COUNT} />
         <main>
           <Hero />
