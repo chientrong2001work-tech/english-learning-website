@@ -57,13 +57,20 @@ export default function ContactWidget() {
         </div>
       )}
 
-      <button
-        onClick={() => setOpen((o) => !o)}
-        aria-label={open ? "Đóng liên hệ" : "Liên hệ"}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-600 text-white shadow-xl transition hover:bg-brand-700"
-      >
-        {open ? <X className="h-6 w-6" /> : <GraduationCap className="h-7 w-7" />}
-      </button>
+      <div className="flex items-center gap-2">
+        {!open && (
+          <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-lg">
+            Hỗ trợ
+          </span>
+        )}
+        <button
+          onClick={() => setOpen((o) => !o)}
+          aria-label={open ? "Đóng liên hệ" : "Liên hệ"}
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white shadow-xl transition hover:bg-brand-700"
+        >
+          {open ? <X className="h-6 w-6" /> : <GraduationCap className="h-7 w-7" />}
+        </button>
+      </div>
     </div>
   );
 }
