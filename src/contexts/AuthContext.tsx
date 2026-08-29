@@ -11,11 +11,14 @@ import {
   signOut,
 } from "firebase/auth";
 import { auth, facebookProvider, firebaseConfigured, googleProvider } from "../lib/firebase";
+import { checkAccess, isAdminEmail, recordLogin } from "../lib/members";
 
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
   configured: boolean;
+  isAdmin: boolean;
+  authorized: boolean | null;
   signInWithGoogle: () => Promise<void>;
   signInWithFacebook: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
@@ -29,6 +32,8 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!firebaseConfigured) {
@@ -37,7 +42,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
-      setLoading(false);
+      if (!u) {
+        setIsAdmin(false);
+        setAuthorized(null);
+        setLoading(false);
+        return;
+      }
+      const admin = isAdminEmail(u.email);
+      setIsAdmin(admin);
+      (admin ? Promise.resolve(true) : checkAccess(u))
+        .then((ok) => {
+          setAuthorized(ok);
+          if (ok) recordLogin(u).catch(() => {});
+        })
+        .catch(() => setAuthorized(false))
+        .finally(() => setLoading(false));
     });
     return unsubscribe;
   }, []);
@@ -73,6 +92,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         loading,
         configured: firebaseConfigured,
+        isAdmin,
+        authorized,
         signInWithGoogle,
         signInWithFacebook,
         signInWithEmail,

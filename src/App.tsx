@@ -11,6 +11,8 @@ import EntryTestPage from "./pages/EntryTestPage";
 import SpeakingRoomPage from "./pages/SpeakingRoomPage";
 import ContactWidget from "./components/ContactWidget";
 import LoginScreen from "./components/auth/LoginScreen";
+import AccessDeniedScreen from "./components/auth/AccessDeniedScreen";
+import AdminPage from "./pages/AdminPage";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useLevelProgress } from "./hooks/useLevelProgress";
@@ -22,9 +24,10 @@ const TOTAL_VOCAB_COUNT = vocabulary.length + levelVocabulary.length;
 
 const ENTRY_TEST_ROUTE = "#/kiem-tra-dau-vao";
 const SPEAKING_ROOM_ROUTE = "#/phong-speaking-ao";
+const ADMIN_ROUTE = "#/quan-tri";
 
 function AppContent() {
-  const { user, loading, configured } = useAuth();
+  const { user, loading, configured, isAdmin, authorized } = useAuth();
   const [route, setRoute] = useState(() => window.location.hash);
   const [knownIds, setKnownIds] = useLocalStorage<string[]>("engup-known-words", []);
   const { recordScore, progress, placementLevel, applyPlacement } = useLevelProgress(knownIds);
@@ -60,8 +63,14 @@ function AppContent() {
     return <LoginScreen />;
   }
 
+  if (!authorized) {
+    return <AccessDeniedScreen />;
+  }
+
   let page: ReactNode;
-  if (route === ENTRY_TEST_ROUTE) {
+  if (route === ADMIN_ROUTE && isAdmin) {
+    page = <AdminPage />;
+  } else if (route === ENTRY_TEST_ROUTE) {
     page = <EntryTestPage placementLevel={placementLevel} onApplyPlacement={applyPlacement} />;
   } else if (route === SPEAKING_ROOM_ROUTE) {
     page = <SpeakingRoomPage />;

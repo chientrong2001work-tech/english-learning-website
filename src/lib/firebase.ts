@@ -1,5 +1,6 @@
 import { initializeApp, type FirebaseApp } from "firebase/app";
 import { FacebookAuthProvider, GoogleAuthProvider, type Auth, getAuth } from "firebase/auth";
+import { type Firestore, getFirestore } from "firebase/firestore";
 
 // These come from the Firebase project's Web App config (Project settings ->
 // General -> Your apps). They are NOT secret — Firebase's security model
@@ -23,12 +24,21 @@ export const firebaseConfigured = Boolean(firebaseConfig.apiKey && firebaseConfi
 // configured yet" message. Only initialize them once real config is present.
 let app: FirebaseApp | null = null;
 let authInstance: Auth | null = null;
+let dbInstance: Firestore | null = null;
 if (firebaseConfigured) {
   app = initializeApp(firebaseConfig);
   authInstance = getAuth(app);
+  dbInstance = getFirestore(app);
 }
 
 export { app };
 export const auth = authInstance as Auth;
+export const db = dbInstance as Firestore;
 export const googleProvider = new GoogleAuthProvider();
 export const facebookProvider = new FacebookAuthProvider();
+
+// The one account allowed into the admin panel (member management, login
+// history). Checked both here (to gate the UI) and in Firestore security
+// rules (to actually enforce it), so changing this alone is not enough —
+// the rules pasted into the Firebase console must match.
+export const ADMIN_EMAIL = "chientrong2001.work@gmail.com";

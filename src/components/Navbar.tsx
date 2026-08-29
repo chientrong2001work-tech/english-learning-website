@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { GraduationCap, Flame, LogOut, Menu, X } from "lucide-react";
+import { GraduationCap, Flame, LogOut, Menu, UserCog, X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
 const navLinks = [
@@ -18,7 +18,7 @@ interface NavbarProps {
 
 export default function Navbar({ knownCount, totalCount }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { user, logOut } = useAuth();
+  const { user, logOut, isAdmin } = useAuth();
   const userLabel = user?.email ?? user?.phoneNumber ?? user?.displayName ?? "Học viên";
 
   return (
@@ -45,6 +45,15 @@ export default function Navbar({ knownCount, totalCount }: NavbarProps) {
             </span>
           </div>
           <div className="hidden items-center gap-2 md:flex">
+            {isAdmin && (
+              <a
+                href="#/quan-tri"
+                title="Trang quản trị"
+                className="inline-flex items-center justify-center rounded-full p-2 text-brand-700 hover:bg-brand-50"
+              >
+                <UserCog className="h-5 w-5" />
+              </a>
+            )}
             <span className="max-w-[10rem] truncate text-sm font-medium text-brand-900/70" title={userLabel}>
               {userLabel}
             </span>
@@ -79,6 +88,16 @@ export default function Navbar({ knownCount, totalCount }: NavbarProps) {
               {link.label}
             </a>
           ))}
+          {isAdmin && (
+            <a
+              href="#/quan-tri"
+              onClick={() => setMobileOpen(false)}
+              className="inline-flex items-center gap-2 rounded-lg px-2 py-2.5 transition hover:bg-brand-50 hover:text-brand-600"
+            >
+              <UserCog className="h-4 w-4" />
+              Trang quản trị
+            </a>
+          )}
           <button
             onClick={() => {
               setMobileOpen(false);
