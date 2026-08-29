@@ -1,0 +1,30 @@
+rules_version = '2';
+
+// Paste this into Firebase Console -> Firestore Database -> Rules (this repo
+// has no Firebase CLI wired up to deploy it automatically).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      // Keep this in sync with ADMIN_EMAIL in src/lib/firebase.ts.
+      return request.auth != null && request.auth.token.email == 'chientrong2001.work@gmail.com';
+    }
+
+    // The access allowlist. Doc ID = a member's email (lowercased) or phone
+    // number (E.164). A signed-in user may only "get" the single doc that
+    // matches their own email/phone (to check their own access) — never list
+    // the whole collection. Only the admin can list, add, or remove members.
+    match /members/{docId} {
+      allow get: if request.auth != null &&
+        (docId == request.auth.token.email || docId == request.auth.token.phone_number);
+      allow list, write: if isAdmin();
+    }
+
+    // Login history, one doc per Firebase Auth UID. A user may only read/write
+    // their own doc (written on every successful login); only the admin can
+    // list everyone's.
+    match /users/{uid} {
+      allow get, write: if request.auth != null && request.auth.uid == uid;
+      allow list: if isAdmin();
+    }
+  }
+}
