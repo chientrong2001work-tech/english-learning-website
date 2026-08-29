@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { GraduationCap, Flame, Menu, X } from "lucide-react";
+import { GraduationCap, Flame, LogOut, Menu, X } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 
 const navLinks = [
   { href: "#/kiem-tra-dau-vao", label: "Test trình độ" },
@@ -17,6 +18,8 @@ interface NavbarProps {
 
 export default function Navbar({ knownCount, totalCount }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, logOut } = useAuth();
+  const userLabel = user?.email ?? user?.phoneNumber ?? user?.displayName ?? "Học viên";
 
   return (
     <header className="sticky top-0 z-50 border-b border-brand-100 bg-white/80 backdrop-blur">
@@ -41,6 +44,19 @@ export default function Navbar({ knownCount, totalCount }: NavbarProps) {
               {knownCount}/{totalCount} từ đã thuộc
             </span>
           </div>
+          <div className="hidden items-center gap-2 md:flex">
+            <span className="max-w-[10rem] truncate text-sm font-medium text-brand-900/70" title={userLabel}>
+              {userLabel}
+            </span>
+            <button
+              onClick={() => logOut()}
+              aria-label="Đăng xuất"
+              title="Đăng xuất"
+              className="inline-flex items-center justify-center rounded-full p-2 text-brand-700 hover:bg-brand-50"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
+          </div>
           <button
             onClick={() => setMobileOpen((open) => !open)}
             className="inline-flex items-center justify-center rounded-full p-2 text-brand-700 hover:bg-brand-50 md:hidden"
@@ -63,6 +79,16 @@ export default function Navbar({ knownCount, totalCount }: NavbarProps) {
               {link.label}
             </a>
           ))}
+          <button
+            onClick={() => {
+              setMobileOpen(false);
+              logOut();
+            }}
+            className="inline-flex items-center gap-2 rounded-lg px-2 py-2.5 text-left text-red-500 transition hover:bg-red-50"
+          >
+            <LogOut className="h-4 w-4" />
+            Đăng xuất ({userLabel})
+          </button>
         </nav>
       )}
     </header>

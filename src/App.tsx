@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { Loader2 } from "lucide-react";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import Roadmap from "./components/roadmap/Roadmap";
@@ -9,6 +10,8 @@ import Footer from "./components/Footer";
 import EntryTestPage from "./pages/EntryTestPage";
 import SpeakingRoomPage from "./pages/SpeakingRoomPage";
 import ContactWidget from "./components/ContactWidget";
+import LoginScreen from "./components/auth/LoginScreen";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useLevelProgress } from "./hooks/useLevelProgress";
 import { vocabulary } from "./data/vocabulary";
@@ -20,7 +23,8 @@ const TOTAL_VOCAB_COUNT = vocabulary.length + levelVocabulary.length;
 const ENTRY_TEST_ROUTE = "#/kiem-tra-dau-vao";
 const SPEAKING_ROOM_ROUTE = "#/phong-speaking-ao";
 
-function App() {
+function AppContent() {
+  const { user, loading, configured } = useAuth();
   const [route, setRoute] = useState(() => window.location.hash);
   const [knownIds, setKnownIds] = useLocalStorage<string[]>("engup-known-words", []);
   const { recordScore, progress, placementLevel, applyPlacement } = useLevelProgress(knownIds);
@@ -43,6 +47,18 @@ function App() {
   }
 
   const totalKnownCount = knownIds.filter((id) => ALL_VOCAB_IDS.has(id)).length;
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f7fbf9]">
+        <Loader2 className="h-8 w-8 animate-spin text-brand-500" />
+      </div>
+    );
+  }
+
+  if (!configured || !user) {
+    return <LoginScreen />;
+  }
 
   let page: ReactNode;
   if (route === ENTRY_TEST_ROUTE) {
@@ -75,6 +91,14 @@ function App() {
       {page}
       <ContactWidget />
     </>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
