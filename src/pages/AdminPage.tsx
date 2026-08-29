@@ -27,6 +27,8 @@ function formatTimestamp(ts: LoginRecord["firstLoginAt"]): string {
   return ts.toDate().toLocaleString("vi-VN");
 }
 
+type IdentifierFilter = "all" | "email" | "phone";
+
 export default function AdminPage() {
   const { logOut } = useAuth();
   const [logins, setLogins] = useState<LoginRecord[]>([]);
@@ -34,6 +36,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busyUid, setBusyUid] = useState<string | null>(null);
+  const [filter, setFilter] = useState<IdentifierFilter>("all");
 
   async function refresh() {
     setLoading(true);
@@ -55,6 +58,12 @@ export default function AdminPage() {
   }, []);
 
   const blockedIds = new Set(blocked.map((b) => b.id));
+
+  const filteredLogins = logins.filter((row) => {
+    if (filter === "email") return row.email !== null;
+    if (filter === "phone") return row.phoneNumber !== null;
+    return true;
+  });
 
   function isRowBlocked(row: LoginRecord): boolean {
     return (row.email !== null && blockedIds.has(row.email)) || (row.phoneNumber !== null && blockedIds.has(row.phoneNumber));
@@ -110,13 +119,33 @@ export default function AdminPage() {
 
         {error && <p className="mb-4 text-sm font-semibold text-red-500">{error}</p>}
 
+        <div className="mb-4 inline-flex rounded-full bg-brand-50 p-1 text-sm font-semibold">
+          {(
+            [
+              { key: "all", label: "Tất cả" },
+              { key: "email", label: "Email" },
+              { key: "phone", label: "Số điện thoại" },
+            ] as { key: IdentifierFilter; label: string }[]
+          ).map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => setFilter(opt.key)}
+              className={`rounded-full px-4 py-2 transition ${
+                filter === opt.key ? "bg-white text-brand-700 shadow" : "text-brand-900/60"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-6 w-6 animate-spin text-brand-500" />
           </div>
-        ) : logins.length === 0 ? (
+        ) : filteredLogins.length === 0 ? (
           <p className="rounded-2xl border border-brand-100 bg-white p-6 text-center text-sm text-brand-900/60">
-            Chưa có ai đăng nhập vào EngUp.
+            {logins.length === 0 ? "Chưa có ai đăng nhập vào EngUp." : "Không có học viên nào khớp với bộ lọc."}
           </p>
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-brand-100 bg-white">
@@ -132,7 +161,7 @@ export default function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {logins.map((row) => {
+                {filteredLogins.map((row) => {
                   const rowBlocked = isRowBlocked(row);
                   return (
                     <tr key={row.uid} className="border-b border-brand-50 last:border-0">
