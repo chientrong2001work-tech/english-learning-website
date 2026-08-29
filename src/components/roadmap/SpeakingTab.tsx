@@ -3,11 +3,15 @@ import { AlertTriangle, Check, Mic, Play, RotateCcw, Square } from "lucide-react
 import { useAudioRecorder } from "../../lib/audioRecorder";
 import { createContinuousRecognizer, type ContinuousSpeechRecognition } from "../../lib/speech";
 import { scoreEnglishResponse } from "../../lib/textScoring";
-import { placementSpeakingQuestions } from "../../data/placementSpeaking";
+import { sample } from "../../lib/array";
+import { levelSpeaking, type LevelSpeakingQuestion } from "../../data/levelSpeaking";
+import type { CEFRLevel } from "../../types";
 
 const MIN_WORDS_FOR_FULL_SCORE = 25;
+const QUESTIONS_PER_ATTEMPT = 3;
 
 interface SpeakingTabProps {
+  level: CEFRLevel;
   onComplete: (percent: number) => void;
 }
 
@@ -17,9 +21,15 @@ interface RecordedAnswer {
 }
 
 // Same format as the placement test's Speaking section: answer a personal
-// question out loud, get it transcribed and scored — instead of the old
-// "say this single vocabulary word" mic check.
-export default function SpeakingTab({ onComplete }: SpeakingTabProps) {
+// question out loud, get it transcribed and scored. Draws from a per-level
+// question pool (levelSpeaking) and samples a random subset each attempt,
+// so a "Làm lại" asks different questions, and topics get more demanding
+// level by level instead of reusing the same 3 fixed questions for everyone.
+export default function SpeakingTab({ level, onComplete }: SpeakingTabProps) {
+  const pool = levelSpeaking[level];
+  const [questions, setQuestions] = useState<LevelSpeakingQuestion[]>(() =>
+    sample(pool, Math.min(QUESTIONS_PER_ATTEMPT, pool.length)),
+  );
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<RecordedAnswer[]>([]);
   const [transcript, setTranscript] = useState("");
@@ -27,7 +37,7 @@ export default function SpeakingTab({ onComplete }: SpeakingTabProps) {
   const recorder = useAudioRecorder();
   const recognizerRef = useRef<ContinuousSpeechRecognition | null>(null);
 
-  const question = placementSpeakingQuestions[index];
+  const question = questions[index];
   const scored =
     recorder.status === "recorded" && transcript.trim()
       ? scoreEnglishResponse(transcript, {
@@ -87,7 +97,7 @@ export default function SpeakingTab({ onComplete }: SpeakingTabProps) {
     setAnswers(next);
     recorder.reset();
     setTranscript("");
-    if (index + 1 < placementSpeakingQuestions.length) {
+    if (index + 1 < questions.length) {
       setIndex((i) => i + 1);
     } else {
       finishAll(next);
@@ -102,7 +112,7 @@ export default function SpeakingTab({ onComplete }: SpeakingTabProps) {
   function skipQuestion() {
     const next = [...answers, { id: question.id, score: 0 }];
     setAnswers(next);
-    if (index + 1 < placementSpeakingQuestions.length) {
+    if (index + 1 < questions.length) {
       setIndex((i) => i + 1);
     } else {
       finishAll(next);
@@ -110,6 +120,7 @@ export default function SpeakingTab({ onComplete }: SpeakingTabProps) {
   }
 
   function restart() {
+    setQuestions(sample(pool, Math.min(QUESTIONS_PER_ATTEMPT, pool.length)));
     setIndex(0);
     setAnswers([]);
     setTranscript("");
@@ -138,7 +149,7 @@ export default function SpeakingTab({ onComplete }: SpeakingTabProps) {
     <div className="mx-auto max-w-xl">
       <div className="mb-4 flex items-center justify-between text-sm font-semibold text-brand-900/50">
         <span>
-          Câu {index + 1} / {placementSpeakingQuestions.length}
+          Câu {index + 1} / {questions.length}
         </span>
       </div>
 

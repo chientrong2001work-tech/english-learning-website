@@ -1,13 +1,20 @@
 import { useState } from "react";
 import { Check, RotateCcw, X } from "lucide-react";
-import type { ReadingTest } from "../../types";
+import { sample } from "../../lib/array";
+import { levelReading } from "../../data/levelReading";
+import type { CEFRLevel, ReadingTest } from "../../types";
 
 interface ReadingTabProps {
-  test: ReadingTest;
+  level: CEFRLevel;
   onComplete: (percent: number) => void;
 }
 
-export default function ReadingTab({ test, onComplete }: ReadingTabProps) {
+// Same format as before: read a passage, answer comprehension questions.
+// The passage itself is now sampled from a per-level pool (levelReading), so
+// a "Làm lại" usually shows a different passage instead of the same one.
+export default function ReadingTab({ level, onComplete }: ReadingTabProps) {
+  const pool = levelReading[level];
+  const [test, setTest] = useState<ReadingTest>(() => sample(pool, 1)[0]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
 
@@ -23,6 +30,7 @@ export default function ReadingTab({ test, onComplete }: ReadingTabProps) {
   }
 
   function restart() {
+    setTest(sample(pool, 1)[0]);
     setAnswers({});
     setSubmitted(false);
   }

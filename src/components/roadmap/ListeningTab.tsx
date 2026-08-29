@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Check, RotateCcw, Volume2, X } from "lucide-react";
 import { normalizeText, speakDialogue, stopSpeech } from "../../lib/speech";
-import { shuffle } from "../../lib/array";
-import { placementListening } from "../../data/placementQuiz";
+import { sample } from "../../lib/array";
+import { levelListening, type LevelListeningItem } from "../../data/levelListening";
 import type { CEFRLevel } from "../../types";
+
+const QUESTIONS_PER_ATTEMPT = 4;
 
 interface ListeningTabProps {
   level: CEFRLevel;
@@ -11,11 +13,15 @@ interface ListeningTabProps {
 }
 
 // Same format as the placement test's Listening section: listen to a short
-// two-person dialogue, then answer a comprehension question about it —
-// instead of the old single-word "listen and pick the meaning" drill.
+// two-person dialogue, then answer a comprehension question about it. Draws
+// from a larger per-level pool (levelListening) and samples a random subset
+// each attempt, so a "Làm lại" shows genuinely different dialogues, not just
+// the same fixed set reordered.
 export default function ListeningTab({ level, onComplete }: ListeningTabProps) {
-  const pool = placementListening[level];
-  const [order, setOrder] = useState<number[]>(() => shuffle(pool.map((_, i) => i)));
+  const pool = levelListening[level];
+  const [items, setItems] = useState<LevelListeningItem[]>(() =>
+    sample(pool, Math.min(QUESTIONS_PER_ATTEMPT, pool.length)),
+  );
   const [current, setCurrent] = useState(0);
   const [score, setScore] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
@@ -27,8 +33,8 @@ export default function ListeningTab({ level, onComplete }: ListeningTabProps) {
     return <p className="text-sm text-brand-900/60">Chưa có bài nghe cho cấp độ này.</p>;
   }
 
-  const item = pool[order[current]];
-  const progress = Math.round(((current + (finished ? 1 : 0)) / order.length) * 100);
+  const item = items[current];
+  const progress = Math.round(((current + (finished ? 1 : 0)) / items.length) * 100);
   const isTextAnswer = selected !== null && !item.options.includes(selected);
 
   function submitAnswer(isCorrect: boolean, chosenLabel: string) {
@@ -39,14 +45,14 @@ export default function ListeningTab({ level, onComplete }: ListeningTabProps) {
     if (isCorrect) setScore(nextScore);
 
     window.setTimeout(() => {
-      if (current + 1 < order.length) {
+      if (current + 1 < items.length) {
         setCurrent((c) => c + 1);
         setSelected(null);
         setTextAnswer("");
         setTextAnswerFeedback(null);
       } else {
         setFinished(true);
-        onComplete(Math.round((nextScore / order.length) * 100));
+        onComplete(Math.round((nextScore / items.length) * 100));
       }
     }, 600);
   }
@@ -64,7 +70,7 @@ export default function ListeningTab({ level, onComplete }: ListeningTabProps) {
   }
 
   function restart() {
-    setOrder(shuffle(pool.map((_, i) => i)));
+    setItems(sample(pool, Math.min(QUESTIONS_PER_ATTEMPT, pool.length)));
     setCurrent(0);
     setScore(0);
     setSelected(null);
@@ -79,7 +85,7 @@ export default function ListeningTab({ level, onComplete }: ListeningTabProps) {
         <>
           <div className="mb-4 flex items-center justify-between text-sm font-semibold text-brand-900/50">
             <span>
-              Câu {current + 1} / {order.length}
+              Câu {current + 1} / {items.length}
             </span>
             <span>Điểm: {score}</span>
           </div>
@@ -160,7 +166,7 @@ export default function ListeningTab({ level, onComplete }: ListeningTabProps) {
       ) : (
         <div className="flex flex-col items-center gap-4 py-6 text-center">
           <h3 className="font-display text-2xl font-bold text-brand-900">
-            Kết quả: {score}/{order.length} ({Math.round((score / order.length) * 100)}%)
+            Kết quả: {score}/{items.length} ({Math.round((score / items.length) * 100)}%)
           </h3>
           <button
             onClick={restart}

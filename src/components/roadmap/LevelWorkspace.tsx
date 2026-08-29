@@ -6,7 +6,6 @@ import SpeakingTab from "./SpeakingTab";
 import ReadingTab from "./ReadingTab";
 import WritingTab from "./WritingTab";
 import { levels } from "../../data/levels";
-import { readingTests } from "../../data/readingTests";
 import { SKILL_PASS_RATIO, type LevelProgress } from "../../hooks/useLevelProgress";
 import type { CEFRLevel, SkillId } from "../../types";
 
@@ -45,7 +44,6 @@ export default function LevelWorkspace({
 }: LevelWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<TabId>("vocab");
   const info = levels.find((l) => l.id === level)!;
-  const readingTest = readingTests.find((t) => t.level === level)!;
   const nextLevel = levels[levels.findIndex((l) => l.id === level) + 1];
 
   return (
@@ -89,10 +87,10 @@ export default function LevelWorkspace({
         <ListeningTab key={level} level={level} onComplete={(pct) => onRecordScore(level, "listening", pct)} />
       )}
       {activeTab === "speaking" && (
-        <SpeakingTab key={level} onComplete={(pct) => onRecordScore(level, "speaking", pct)} />
+        <SpeakingTab key={level} level={level} onComplete={(pct) => onRecordScore(level, "speaking", pct)} />
       )}
       {activeTab === "reading" && (
-        <ReadingTab key={level} test={readingTest} onComplete={(pct) => onRecordScore(level, "reading", pct)} />
+        <ReadingTab key={level} level={level} onComplete={(pct) => onRecordScore(level, "reading", pct)} />
       )}
       {activeTab === "writing" && (
         <WritingTab key={level} words={progress.words} onComplete={(pct) => onRecordScore(level, "writing", pct)} />
