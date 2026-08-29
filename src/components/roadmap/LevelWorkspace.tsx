@@ -86,10 +86,10 @@ export default function LevelWorkspace({
         <VocabTab key={level} words={progress.words} knownIds={knownIds} onToggleKnown={onToggleKnown} />
       )}
       {activeTab === "listening" && (
-        <ListeningTab key={level} words={progress.words} onComplete={(pct) => onRecordScore(level, "listening", pct)} />
+        <ListeningTab key={level} level={level} onComplete={(pct) => onRecordScore(level, "listening", pct)} />
       )}
       {activeTab === "speaking" && (
-        <SpeakingTab key={level} words={progress.words} onComplete={(pct) => onRecordScore(level, "speaking", pct)} />
+        <SpeakingTab key={level} onComplete={(pct) => onRecordScore(level, "speaking", pct)} />
       )}
       {activeTab === "reading" && (
         <ReadingTab key={level} test={readingTest} onComplete={(pct) => onRecordScore(level, "reading", pct)} />

@@ -1,185 +1,258 @@
-import { useEffect, useRef, useState } from "react";
-import { Check, Mic, RotateCcw, Volume2, X } from "lucide-react";
-import {
-  createSpeechRecognizer,
-  isSpeechRecognitionSupported,
-  normalizeText,
-  speak,
-  type MinimalSpeechRecognition,
-} from "../../lib/speech";
-import { sample } from "../../lib/array";
-import type { LevelVocabWord } from "../../types";
+import { useRef, useState } from "react";
+import { AlertTriangle, Check, Mic, Play, RotateCcw, Square } from "lucide-react";
+import { useAudioRecorder } from "../../lib/audioRecorder";
+import { createContinuousRecognizer, type ContinuousSpeechRecognition } from "../../lib/speech";
+import { scoreEnglishResponse } from "../../lib/textScoring";
+import { placementSpeakingQuestions } from "../../data/placementSpeaking";
 
-const ITEM_COUNT = 5;
+const MIN_WORDS_FOR_FULL_SCORE = 25;
 
 interface SpeakingTabProps {
-  words: LevelVocabWord[];
   onComplete: (percent: number) => void;
 }
 
-type ItemResult = "correct" | "incorrect" | null;
+interface RecordedAnswer {
+  id: string;
+  score: number | null;
+}
 
-export default function SpeakingTab({ words, onComplete }: SpeakingTabProps) {
-  const supported = isSpeechRecognitionSupported();
-  const [items, setItems] = useState<LevelVocabWord[]>(() => sample(words, Math.min(ITEM_COUNT, words.length)));
-  const [current, setCurrent] = useState(0);
-  const [score, setScore] = useState(0);
-  const [listening, setListening] = useState(false);
+// Same format as the placement test's Speaking section: answer a personal
+// question out loud, get it transcribed and scored — instead of the old
+// "say this single vocabulary word" mic check.
+export default function SpeakingTab({ onComplete }: SpeakingTabProps) {
+  const [index, setIndex] = useState(0);
+  const [answers, setAnswers] = useState<RecordedAnswer[]>([]);
   const [transcript, setTranscript] = useState("");
-  const [result, setResult] = useState<ItemResult>(null);
   const [finished, setFinished] = useState(false);
-  const recognizerRef = useRef<MinimalSpeechRecognition | null>(null);
+  const recorder = useAudioRecorder();
+  const recognizerRef = useRef<ContinuousSpeechRecognition | null>(null);
 
-  useEffect(() => {
-    return () => {
-      recognizerRef.current?.stop();
-    };
-  }, []);
+  const question = placementSpeakingQuestions[index];
+  const scored =
+    recorder.status === "recorded" && transcript.trim()
+      ? scoreEnglishResponse(transcript, {
+          promptText: question.prompt,
+          minWordsForFullLength: MIN_WORDS_FOR_FULL_SCORE,
+          keywordGroups: question.keywordGroups,
+        })
+      : null;
 
-  const item = items[current];
-
-  function goNext(nextScore: number) {
-    window.setTimeout(() => {
-      if (current + 1 < items.length) {
-        setCurrent((c) => c + 1);
-        setResult(null);
-        setTranscript("");
-      } else {
-        setFinished(true);
-        onComplete(Math.round((nextScore / items.length) * 100));
-      }
-    }, 900);
-  }
-
-  function startListening() {
-    if (!supported || listening) return;
-    const recognizer = createSpeechRecognizer();
-    if (!recognizer) return;
+  function startRecording() {
+    setTranscript("");
+    const recognizer = createContinuousRecognizer();
     recognizerRef.current = recognizer;
-    setListening(true);
-    setResult(null);
-
-    recognizer.onresult = (event) => {
-      const heard = event.results[0]?.[0]?.transcript ?? "";
-      setTranscript(heard);
-      const isCorrect = normalizeText(heard).includes(normalizeText(item.word));
-      const nextScore = isCorrect ? score + 1 : score;
-      if (isCorrect) setScore(nextScore);
-      setResult(isCorrect ? "correct" : "incorrect");
-      setListening(false);
-      goNext(nextScore);
-    };
-    recognizer.onerror = () => {
-      setListening(false);
-    };
-    recognizer.onend = () => {
-      setListening(false);
-    };
-    recognizer.start();
+    if (recognizer) {
+      recognizer.onresult = (event) => {
+        let text = "";
+        for (let i = 0; i < event.results.length; i++) {
+          text += event.results[i][0].transcript + " ";
+        }
+        setTranscript(text.trim());
+      };
+      recognizer.onerror = () => {};
+      recognizer.onend = () => {};
+      try {
+        recognizer.start();
+      } catch {
+        // ignore — recording still proceeds without a live transcript
+      }
+    }
+    recorder.start();
   }
 
-  function markManually(correct: boolean) {
-    const nextScore = correct ? score + 1 : score;
-    if (correct) setScore(nextScore);
-    setResult(correct ? "correct" : "incorrect");
-    goNext(nextScore);
+  function stopRecording() {
+    recognizerRef.current?.stop();
+    recorder.stop();
+  }
+
+  function finishAll(finalAnswers: RecordedAnswer[]) {
+    setFinished(true);
+    const avg =
+      finalAnswers.length > 0
+        ? Math.round(finalAnswers.reduce((sum, r) => sum + (r.score ?? 0), 0) / finalAnswers.length)
+        : 0;
+    onComplete(avg);
+  }
+
+  function confirmAndContinue() {
+    if (!recorder.audioUrl) return;
+    const finalScore = transcript.trim()
+      ? scoreEnglishResponse(transcript, {
+          promptText: question.prompt,
+          minWordsForFullLength: MIN_WORDS_FOR_FULL_SCORE,
+          keywordGroups: question.keywordGroups,
+        })
+      : null;
+    const next = [...answers, { id: question.id, score: finalScore?.score ?? null }];
+    setAnswers(next);
+    recorder.reset();
+    setTranscript("");
+    if (index + 1 < placementSpeakingQuestions.length) {
+      setIndex((i) => i + 1);
+    } else {
+      finishAll(next);
+    }
+  }
+
+  function reRecord() {
+    recorder.reset();
+    setTranscript("");
+  }
+
+  function skipQuestion() {
+    const next = [...answers, { id: question.id, score: 0 }];
+    setAnswers(next);
+    if (index + 1 < placementSpeakingQuestions.length) {
+      setIndex((i) => i + 1);
+    } else {
+      finishAll(next);
+    }
   }
 
   function restart() {
-    setItems(sample(words, Math.min(ITEM_COUNT, words.length)));
-    setCurrent(0);
-    setScore(0);
-    setResult(null);
+    setIndex(0);
+    setAnswers([]);
     setTranscript("");
     setFinished(false);
+    recorder.reset();
   }
 
-  if (words.length === 0) {
-    return <p className="text-sm text-brand-900/60">Chưa có từ vựng cho cấp độ này.</p>;
+  if (finished) {
+    const avg =
+      answers.length > 0 ? Math.round(answers.reduce((sum, r) => sum + (r.score ?? 0), 0) / answers.length) : 0;
+    return (
+      <div className="mx-auto flex max-w-xl flex-col items-center gap-4 py-6 text-center">
+        <h3 className="font-display text-2xl font-bold text-brand-900">Kết quả: {avg}/100</h3>
+        <button
+          onClick={restart}
+          className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-3 font-semibold text-white transition hover:bg-brand-600"
+        >
+          <RotateCcw className="h-4 w-4" />
+          Làm lại
+        </button>
+      </div>
+    );
   }
 
   return (
     <div className="mx-auto max-w-xl">
-      {!finished ? (
-        <>
-          <div className="mb-4 flex items-center justify-between text-sm font-semibold text-brand-900/50">
-            <span>Từ {current + 1} / {items.length}</span>
-            <span>Điểm: {score}</span>
-          </div>
+      <div className="mb-4 flex items-center justify-between text-sm font-semibold text-brand-900/50">
+        <span>
+          Câu {index + 1} / {placementSpeakingQuestions.length}
+        </span>
+      </div>
 
-          <div className="flex flex-col items-center gap-4 rounded-2xl border border-brand-100 bg-white p-8 text-center">
-            <p className="text-sm font-semibold uppercase tracking-wide text-brand-500">Hãy phát âm từ này</p>
-            <div className="flex items-center gap-3">
-              <h3 className="font-display text-4xl font-bold text-brand-900">{item.word}</h3>
+      <div className="rounded-3xl border border-brand-100 bg-white p-6 shadow-lg shadow-brand-900/5">
+        <p className="mb-1 text-center font-display text-xl font-bold text-brand-900">{question.prompt}</p>
+        <p className="mb-6 text-center text-sm text-brand-900/50">{question.hint}</p>
+
+        <div className="flex flex-col items-center gap-4">
+          {recorder.status === "unsupported" && (
+            <div className="flex flex-col items-center gap-3 text-center">
+              <p className="inline-flex items-center gap-2 text-sm font-semibold text-amber-600">
+                <AlertTriangle className="h-4 w-4" />
+                Trình duyệt này không hỗ trợ ghi âm micro.
+              </p>
               <button
-                onClick={() => speak(item.word)}
-                className="rounded-full bg-brand-50 p-2 text-brand-600 hover:bg-brand-100"
-                aria-label="Nghe mẫu"
+                onClick={skipQuestion}
+                className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-6 py-3 font-semibold text-brand-700 transition hover:bg-brand-50"
               >
-                <Volume2 className="h-4 w-4" />
+                Bỏ qua câu này
               </button>
             </div>
-            {item.ipa && <p className="text-brand-900/40">{item.ipa}</p>}
+          )}
 
-            {supported ? (
-              <>
-                <button
-                  onClick={startListening}
-                  disabled={listening}
-                  className={`inline-flex items-center gap-2 rounded-full px-6 py-3 font-semibold text-white transition ${
-                    listening ? "bg-red-500" : "bg-brand-500 hover:bg-brand-600"
-                  }`}
-                >
-                  <Mic className="h-5 w-5" />
-                  {listening ? "Đang nghe..." : "Bắt đầu nói"}
-                </button>
-                {transcript && <p className="text-sm text-brand-900/60">Bạn đã nói: "{transcript}"</p>}
-              </>
-            ) : (
-              <div className="flex flex-col items-center gap-3">
-                <p className="text-sm text-brand-900/60">
-                  Trình duyệt này chưa hỗ trợ nhận diện giọng nói. Hãy tự đọc to từ trên và tự đánh giá.
-                </p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => markManually(true)}
-                    className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-5 py-2.5 font-semibold text-white hover:bg-brand-600"
-                  >
-                    <Check className="h-4 w-4" />
-                    Tôi phát âm đúng
-                  </button>
-                  <button
-                    onClick={() => markManually(false)}
-                    className="inline-flex items-center gap-2 rounded-full bg-red-50 px-5 py-2.5 font-semibold text-red-600 hover:bg-red-100"
-                  >
-                    <X className="h-4 w-4" />
-                    Chưa chuẩn
-                  </button>
-                </div>
-              </div>
-            )}
+          {recorder.status === "idle" && (
+            <button
+              onClick={startRecording}
+              className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-3 font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600"
+            >
+              <Mic className="h-5 w-5" />
+              Bắt đầu ghi âm
+            </button>
+          )}
 
-            {result && (
-              <p className={`font-semibold ${result === "correct" ? "text-brand-600" : "text-red-500"}`}>
-                {result === "correct" ? "Chính xác!" : "Chưa đúng, thử lại ở từ tiếp theo nhé."}
+          {recorder.status === "requesting" && (
+            <p className="text-sm text-brand-900/60">Đang xin quyền truy cập micro...</p>
+          )}
+
+          {recorder.status === "recording" && (
+            <button
+              onClick={stopRecording}
+              className="inline-flex items-center gap-2 rounded-full bg-red-500 px-6 py-3 font-semibold text-white shadow-lg shadow-red-500/30 transition hover:bg-red-600"
+            >
+              <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-white" />
+              Đang ghi âm... Bấm để dừng
+              <Square className="h-4 w-4" />
+            </button>
+          )}
+
+          {recorder.status === "error" && (
+            <div className="flex flex-col items-center gap-3 text-center">
+              <p className="inline-flex items-center gap-2 text-sm font-semibold text-red-500">
+                <AlertTriangle className="h-4 w-4" />
+                {recorder.errorMessage}
               </p>
-            )}
-          </div>
-        </>
-      ) : (
-        <div className="flex flex-col items-center gap-4 py-6 text-center">
-          <h3 className="font-display text-2xl font-bold text-brand-900">
-            Kết quả: {score}/{items.length} ({Math.round((score / items.length) * 100)}%)
-          </h3>
-          <button
-            onClick={restart}
-            className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-3 font-semibold text-white transition hover:bg-brand-600"
-          >
-            <RotateCcw className="h-4 w-4" />
-            Làm lại
-          </button>
+              <button
+                onClick={startRecording}
+                className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-3 font-semibold text-white transition hover:bg-brand-600"
+              >
+                <Mic className="h-5 w-5" />
+                Thử lại
+              </button>
+            </div>
+          )}
+
+          {recorder.status === "recorded" && recorder.audioUrl && (
+            <div className="flex w-full flex-col items-center gap-4">
+              <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600">
+                <Play className="h-4 w-4" />
+                Đã ghi âm ({recorder.durationSec}s) — nghe lại bên dưới
+              </p>
+              <audio controls src={recorder.audioUrl} className="w-full max-w-sm" />
+
+              {scored ? (
+                <div className="w-full rounded-2xl bg-brand-50 p-4 text-left">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">
+                    Văn bản nhận diện được
+                  </p>
+                  <p className="mt-1 text-sm italic text-brand-900/70">"{transcript}"</p>
+                  <p className="mt-3 font-display font-bold text-brand-900">
+                    Điểm: {scored.score}/100 · Mức: {scored.band}
+                  </p>
+                  <ul className="mt-2 space-y-1 text-sm text-brand-900/70">
+                    {scored.feedback.map((f) => (
+                      <li key={f}>• {f}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p className="max-w-sm text-center text-xs text-brand-900/40">
+                  Trình duyệt này không nhận diện được nội dung giọng nói để chấm điểm tự động, nhưng bản ghi âm
+                  vẫn được lưu để bạn tự nghe lại.
+                </p>
+              )}
+
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <button
+                  onClick={reRecord}
+                  className="inline-flex items-center gap-2 rounded-full border border-brand-200 px-5 py-2.5 font-semibold text-brand-700 transition hover:bg-brand-50"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Ghi âm lại
+                </button>
+                <button
+                  onClick={confirmAndContinue}
+                  className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-3 font-semibold text-white transition hover:bg-brand-600"
+                >
+                  <Check className="h-4 w-4" />
+                  Xác nhận & tiếp tục
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
