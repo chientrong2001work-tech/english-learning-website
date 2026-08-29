@@ -29,7 +29,7 @@ const SPEAKING_ROOM_ROUTE = "#/phong-speaking-ao";
 const ADMIN_ROUTE = "#/quan-tri";
 
 function AppContent() {
-  const { user, loading, configured, isAdmin, authorized } = useAuth();
+  const { user, loading, configured, isAdmin, authorized, identitySynced } = useAuth();
   const [route, setRoute] = useState(() => window.location.hash);
   const [knownIds, setKnownIds] = useLocalStorage<string[]>("engup-known-words", []);
   const { recordScore, progress, placementLevel, applyPlacement } = useLevelProgress(knownIds);
@@ -60,7 +60,7 @@ function AppContent() {
   const currentLevelPassed = currentLevelInfo?.levelPassed ?? false;
 
   useEffect(() => {
-    if (!user || !authorized) return;
+    if (!user || !authorized || !identitySynced) return;
     syncProgress(user.uid, {
       knownCount: totalKnownCount,
       totalVocab: TOTAL_VOCAB_COUNT,
@@ -70,7 +70,17 @@ function AppContent() {
       currentLevelTarget,
       currentLevelPassed,
     }).catch(() => {});
-  }, [user, authorized, totalKnownCount, placementLevel, currentLevel, currentLevelKnown, currentLevelTarget, currentLevelPassed]);
+  }, [
+    user,
+    authorized,
+    identitySynced,
+    totalKnownCount,
+    placementLevel,
+    currentLevel,
+    currentLevelKnown,
+    currentLevelTarget,
+    currentLevelPassed,
+  ]);
 
   if (loading) {
     return (

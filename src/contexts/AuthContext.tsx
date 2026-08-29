@@ -19,6 +19,11 @@ interface AuthContextValue {
   configured: boolean;
   isAdmin: boolean;
   authorized: boolean | null;
+  // True once the login-history write (email/phone/provider/lastLoginAt) for
+  // the current sign-in has landed in Firestore. Other code that writes to
+  // the same users/{uid} doc (e.g. progress sync) should wait for this, so
+  // it never races ahead and leaves that doc missing its identity fields.
+  identitySynced: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithFacebook: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
@@ -34,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [authorized, setAuthorized] = useState<boolean | null>(null);
+  const [identitySynced, setIdentitySynced] = useState(false);
 
   useEffect(() => {
     if (!firebaseConfigured) {
@@ -45,17 +51,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!u) {
         setIsAdmin(false);
         setAuthorized(null);
+        setIdentitySynced(false);
         setLoading(false);
         return;
       }
       const admin = isAdminEmail(u.email);
       setIsAdmin(admin);
+      setIdentitySynced(false);
       (admin ? Promise.resolve(true) : checkAccess(u))
-        .then((ok) => {
+        .then(async (ok) => {
           setAuthorized(ok);
-          if (ok) recordLogin(u).catch(() => {});
+          if (ok) {
+            await recordLogin(u).catch(() => {});
+          }
+          setIdentitySynced(true);
         })
-        .catch(() => setAuthorized(false))
+        .catch(() => {
+          setAuthorized(false);
+          setIdentitySynced(true);
+        })
         .finally(() => setLoading(false));
     });
     return unsubscribe;
@@ -94,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         configured: firebaseConfigured,
         isAdmin,
         authorized,
+        identitySynced,
         signInWithGoogle,
         signInWithFacebook,
         signInWithEmail,

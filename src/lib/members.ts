@@ -59,9 +59,16 @@ export async function checkAccess(user: User): Promise<boolean> {
   return true;
 }
 
+// Writes identity + lastLoginAt in a single round trip (no preceding read),
+// so this lands as fast as syncProgress's write — otherwise, on a slow
+// connection or a quickly-closed tab, syncProgress's one-write update could
+// finish first and leave the admin panel showing a bare UID with no
+// email/phone/provider until the next login. firstLoginAt is backfilled
+// afterwards, best-effort: it needs a read to know whether it's already set,
+// but losing that one field to a closed tab is harmless (it just gets set on
+// the next successful login instead), unlike the identity fields above.
 export async function recordLogin(user: User): Promise<void> {
   const ref = doc(db, "users", user.uid);
-  const existing = await getDoc(ref);
   await setDoc(
     ref,
     {
@@ -69,11 +76,14 @@ export async function recordLogin(user: User): Promise<void> {
       phoneNumber: user.phoneNumber ?? null,
       displayName: user.displayName ?? null,
       providers: user.providerData.map((p) => p.providerId),
-      firstLoginAt: existing.exists() ? existing.data().firstLoginAt : serverTimestamp(),
       lastLoginAt: serverTimestamp(),
     },
     { merge: true },
   );
+  const snap = await getDoc(ref);
+  if (!snap.data()?.firstLoginAt) {
+    await setDoc(ref, { firstLoginAt: serverTimestamp() }, { merge: true });
+  }
 }
 
 export async function listLoginRecords(): Promise<LoginRecord[]> {
