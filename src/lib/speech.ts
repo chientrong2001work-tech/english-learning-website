@@ -147,6 +147,16 @@ export function normalizeText(text: string): string {
     .replace(/\s+/g, " ");
 }
 
+// Case-fold and Unicode-normalize only — every tone mark and vowel-shape
+// diacritic is kept as typed. Use this (not normalizeText) when matching
+// Vietnamese meaning text the user is expected to type correctly, e.g. the
+// vocabulary search: typing "nắng" should only match "nắng", not also
+// "năng" (as in "kỹ năng") just because they share the same letters once
+// tones are dropped.
+export function normalizeExact(text: string): string {
+  return text.toLowerCase().normalize("NFC").trim().replace(/\s+/g, " ");
+}
+
 export interface MinimalSpeechRecognition {
   lang: string;
   interimResults: boolean;

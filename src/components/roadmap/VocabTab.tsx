@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Search, Shuffle } from "lucide-react";
-import { normalizeText } from "../../lib/speech";
+import { normalizeExact, normalizeText } from "../../lib/speech";
 import { shuffle } from "../../lib/array";
 import VocabQuizCard from "../VocabQuizCard";
 import type { LevelVocabWord } from "../../types";
@@ -20,13 +20,18 @@ export default function VocabTab({ words, knownIds, onToggleKnown }: VocabTabPro
   const wordById = useMemo(() => new Map(words.map((w) => [w.id, w])), [words]);
 
   const filteredIds = useMemo(() => {
-    const q = normalizeText(query);
+    // English word: forgiving match (tone/accent-insensitive, in case the
+    // query has stray diacritics). Vietnamese meaning: exact-diacritic
+    // match, so typing "nắng" only matches "nắng" and not "kỹ năng" just
+    // because they share the same letters once tones are stripped.
+    const qLoose = normalizeText(query);
+    const qExact = normalizeExact(query);
     return order.filter((id) => {
       const word = wordById.get(id);
       if (!word) return false;
       if (onlyUnknown && knownIds.includes(id)) return false;
-      if (!q) return true;
-      return normalizeText(word.word).includes(q) || normalizeText(word.meaning).includes(q);
+      if (!qExact) return true;
+      return normalizeText(word.word).includes(qLoose) || normalizeExact(word.meaning).includes(qExact);
     });
   }, [order, wordById, onlyUnknown, knownIds, query]);
 
