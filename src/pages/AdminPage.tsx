@@ -27,6 +27,16 @@ function formatTimestamp(ts: LoginRecord["firstLoginAt"]): string {
   return ts.toDate().toLocaleString("vi-VN");
 }
 
+function formatProgress(p: LoginRecord["progress"]): string {
+  if (!p) return "Chưa có dữ liệu";
+  const levelPart = !p.currentLevel
+    ? "Chưa bắt đầu"
+    : p.currentLevelPassed
+      ? `Đã hoàn thành ${p.currentLevel}`
+      : `Đang học ${p.currentLevel} (${p.currentLevelKnown}/${p.currentLevelTarget} từ)`;
+  return `${p.knownCount}/${p.totalVocab} từ · ${levelPart}`;
+}
+
 type IdentifierFilter = "all" | "email" | "phone";
 
 export default function AdminPage() {
@@ -149,11 +159,13 @@ export default function AdminPage() {
           </p>
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-brand-100 bg-white">
-            <table className="w-full min-w-[720px] text-left text-sm">
+            <table className="w-full min-w-[960px] text-left text-sm">
               <thead className="border-b border-brand-100 text-xs font-semibold uppercase tracking-wide text-brand-900/40">
                 <tr>
+                  <th className="px-4 py-3">STT</th>
                   <th className="px-4 py-3">Email / Số điện thoại</th>
                   <th className="px-4 py-3">Đăng nhập bằng</th>
+                  <th className="px-4 py-3">Tiến độ</th>
                   <th className="px-4 py-3">Lần đầu đăng nhập</th>
                   <th className="px-4 py-3">Lần cuối đăng nhập</th>
                   <th className="px-4 py-3">Trạng thái</th>
@@ -161,10 +173,11 @@ export default function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredLogins.map((row) => {
+                {filteredLogins.map((row, index) => {
                   const rowBlocked = isRowBlocked(row);
                   return (
                     <tr key={row.uid} className="border-b border-brand-50 last:border-0">
+                      <td className="px-4 py-3 text-brand-900/60">{index + 1}</td>
                       <td className="px-4 py-3 font-medium text-brand-900">
                         <span className="inline-flex items-center gap-2">
                           {row.email ? (
@@ -176,6 +189,7 @@ export default function AdminPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-brand-900/70">{formatProviders(row.providers)}</td>
+                      <td className="px-4 py-3 text-brand-900/70">{formatProgress(row.progress)}</td>
                       <td className="px-4 py-3 text-brand-900/70">{formatTimestamp(row.firstLoginAt)}</td>
                       <td className="px-4 py-3 text-brand-900/70">{formatTimestamp(row.lastLoginAt)}</td>
                       <td className="px-4 py-3">

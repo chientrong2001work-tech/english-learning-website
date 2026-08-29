@@ -15,6 +15,7 @@ import LoginScreen from "./components/auth/LoginScreen";
 import AccessDeniedScreen from "./components/auth/AccessDeniedScreen";
 import AdminPage from "./pages/AdminPage";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { syncProgress } from "./lib/members";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useLevelProgress } from "./hooks/useLevelProgress";
 import { vocabulary } from "./data/vocabulary";
@@ -51,6 +52,25 @@ function AppContent() {
   }
 
   const totalKnownCount = knownIds.filter((id) => ALL_VOCAB_IDS.has(id)).length;
+
+  const currentLevelInfo = progress.find((p) => p.unlocked && !p.levelPassed) ?? progress[progress.length - 1];
+  const currentLevel = currentLevelInfo?.level ?? null;
+  const currentLevelKnown = currentLevelInfo?.knownCount ?? 0;
+  const currentLevelTarget = currentLevelInfo?.vocabTarget ?? 0;
+  const currentLevelPassed = currentLevelInfo?.levelPassed ?? false;
+
+  useEffect(() => {
+    if (!user || !authorized) return;
+    syncProgress(user.uid, {
+      knownCount: totalKnownCount,
+      totalVocab: TOTAL_VOCAB_COUNT,
+      placementLevel: placementLevel ?? null,
+      currentLevel,
+      currentLevelKnown,
+      currentLevelTarget,
+      currentLevelPassed,
+    }).catch(() => {});
+  }, [user, authorized, totalKnownCount, placementLevel, currentLevel, currentLevelKnown, currentLevelTarget, currentLevelPassed]);
 
   if (loading) {
     return (

@@ -17,6 +17,16 @@ export interface BlockedEntry {
   addedAt: Timestamp | null;
 }
 
+export interface ProgressSummary {
+  knownCount: number;
+  totalVocab: number;
+  placementLevel: string | null;
+  currentLevel: string | null;
+  currentLevelKnown: number;
+  currentLevelTarget: number;
+  currentLevelPassed: boolean;
+}
+
 export interface LoginRecord {
   uid: string;
   email: string | null;
@@ -25,6 +35,7 @@ export interface LoginRecord {
   providers: string[];
   firstLoginAt: Timestamp | null;
   lastLoginAt: Timestamp | null;
+  progress: ProgressSummary | null;
 }
 
 function normalizeEmail(email: string): string {
@@ -77,8 +88,16 @@ export async function listLoginRecords(): Promise<LoginRecord[]> {
       providers: data.providers ?? [],
       firstLoginAt: data.firstLoginAt ?? null,
       lastLoginAt: data.lastLoginAt ?? null,
+      progress: data.progress ?? null,
     };
   });
+}
+
+// Called whenever a signed-in learner's local progress (known words, level
+// scores) changes, so the admin panel can show where they've gotten to.
+// Merges into the same per-uid doc as recordLogin — same self-write rule.
+export async function syncProgress(uid: string, progress: ProgressSummary): Promise<void> {
+  await setDoc(doc(db, "users", uid), { progress }, { merge: true });
 }
 
 export async function listBlocked(): Promise<BlockedEntry[]> {
