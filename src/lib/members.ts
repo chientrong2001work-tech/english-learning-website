@@ -11,7 +11,7 @@ import {
 import type { User } from "firebase/auth";
 import { ADMIN_EMAIL, db } from "./firebase";
 
-export interface MemberEntry {
+export interface BlockedEntry {
   id: string;
   type: "email" | "phone";
   addedAt: Timestamp | null;
@@ -32,17 +32,20 @@ function normalizeEmail(email: string): string {
 }
 
 // Firestore document IDs can't contain "/"; email/phone never do, so they're
-// used directly as the member doc ID — this also lets a signed-in user look
-// up (get) just their own entry without a broader list permission.
-export async function isMember(identifier: string): Promise<boolean> {
-  const snap = await getDoc(doc(db, "members", identifier));
+// used directly as the blocked doc ID — this also lets a signed-in user look
+// up (get) just their own entry without a broader list permission, to check
+// whether they themselves are blocked.
+async function isBlockedIdentifier(identifier: string): Promise<boolean> {
+  const snap = await getDoc(doc(db, "blocked", identifier));
   return snap.exists();
 }
 
+// Access is open by default — anyone who signs in gets in — unless the admin
+// has explicitly blocked their email or phone number.
 export async function checkAccess(user: User): Promise<boolean> {
-  if (user.email && (await isMember(normalizeEmail(user.email)))) return true;
-  if (user.phoneNumber && (await isMember(user.phoneNumber))) return true;
-  return false;
+  if (user.email && (await isBlockedIdentifier(normalizeEmail(user.email)))) return false;
+  if (user.phoneNumber && (await isBlockedIdentifier(user.phoneNumber))) return false;
+  return true;
 }
 
 export async function recordLogin(user: User): Promise<void> {
@@ -62,11 +65,6 @@ export async function recordLogin(user: User): Promise<void> {
   );
 }
 
-export async function listMembers(): Promise<MemberEntry[]> {
-  const snap = await getDocs(collection(db, "members"));
-  return snap.docs.map((d) => ({ id: d.id, type: d.data().type, addedAt: d.data().addedAt ?? null }));
-}
-
 export async function listLoginRecords(): Promise<LoginRecord[]> {
   const snap = await getDocs(collection(db, "users"));
   return snap.docs.map((d) => {
@@ -83,13 +81,18 @@ export async function listLoginRecords(): Promise<LoginRecord[]> {
   });
 }
 
-export async function addMember(rawIdentifier: string, type: "email" | "phone"): Promise<void> {
-  const identifier = type === "email" ? normalizeEmail(rawIdentifier) : rawIdentifier.trim();
-  await setDoc(doc(db, "members", identifier), { type, addedAt: serverTimestamp() });
+export async function listBlocked(): Promise<BlockedEntry[]> {
+  const snap = await getDocs(collection(db, "blocked"));
+  return snap.docs.map((d) => ({ id: d.id, type: d.data().type, addedAt: d.data().addedAt ?? null }));
 }
 
-export async function removeMember(identifier: string): Promise<void> {
-  await deleteDoc(doc(db, "members", identifier));
+export async function blockIdentifier(rawIdentifier: string, type: "email" | "phone"): Promise<void> {
+  const identifier = type === "email" ? normalizeEmail(rawIdentifier) : rawIdentifier.trim();
+  await setDoc(doc(db, "blocked", identifier), { type, addedAt: serverTimestamp() });
+}
+
+export async function unblockIdentifier(identifier: string): Promise<void> {
+  await deleteDoc(doc(db, "blocked", identifier));
 }
 
 export function isAdminEmail(email: string | null | undefined): boolean {

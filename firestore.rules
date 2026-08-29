@@ -9,11 +9,13 @@ service cloud.firestore {
       return request.auth != null && request.auth.token.email == 'chientrong2001.work@gmail.com';
     }
 
-    // The access allowlist. Doc ID = a member's email (lowercased) or phone
-    // number (E.164). A signed-in user may only "get" the single doc that
-    // matches their own email/phone (to check their own access) — never list
-    // the whole collection. Only the admin can list, add, or remove members.
-    match /members/{docId} {
+    // Access is open to anyone who signs in, unless their email/phone is
+    // blocked here. Doc ID = the blocked identifier (lowercased email, or
+    // E.164 phone number). A signed-in user may only "get" the single doc
+    // that matches their own email/phone (to check whether they themselves
+    // are blocked) — never list the whole collection. Only the admin can
+    // list, add, or remove blocks.
+    match /blocked/{docId} {
       allow get: if request.auth != null &&
         (docId == request.auth.token.email || docId == request.auth.token.phone_number);
       allow list, write: if isAdmin();
