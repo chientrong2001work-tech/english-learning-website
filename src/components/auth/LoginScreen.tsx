@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { GraduationCap, Loader2, Phone } from "lucide-react";
+import { Facebook, GraduationCap, Loader2, Phone } from "lucide-react";
 import type { ConfirmationResult } from "firebase/auth";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -59,7 +59,7 @@ function errorMessage(code: string): string {
 }
 
 export default function LoginScreen() {
-  const { configured, signInWithGoogle, signInWithEmail, signUpWithEmail, sendPhoneCode } = useAuth();
+  const { configured, signInWithGoogle, signInWithFacebook, signInWithEmail, signUpWithEmail, sendPhoneCode } = useAuth();
   const [mode, setMode] = useState<Mode>("email");
   const [emailAction, setEmailAction] = useState<EmailAction>("login");
   const [email, setEmail] = useState("");
@@ -141,6 +141,15 @@ export default function LoginScreen() {
           >
             <GoogleIcon />
             Đăng nhập với Google
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => runAction(signInWithFacebook)}
+            className="inline-flex items-center justify-center gap-3 rounded-full bg-[#1877F2] px-5 py-3 font-semibold text-white transition hover:bg-[#166fe0] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Facebook className="h-5 w-5 fill-white" />
+            Đăng nhập với Facebook
           </button>
         </div>
 
