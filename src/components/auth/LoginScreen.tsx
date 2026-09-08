@@ -53,6 +53,8 @@ function errorMessage(code: string): string {
       return "Quá nhiều yêu cầu, vui lòng thử lại sau.";
     case "auth/popup-closed-by-user":
       return "Bạn đã đóng cửa sổ đăng nhập trước khi hoàn tất.";
+    case "auth/account-exists-with-different-credential":
+      return "Email này đã được đăng ký bằng một phương thức khác (ví dụ email/mật khẩu). Hãy đăng nhập bằng phương thức đó trước.";
     default:
       return "Có lỗi xảy ra, vui lòng thử lại.";
   }
