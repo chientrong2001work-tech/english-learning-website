@@ -3,9 +3,7 @@ import {
   type ConfirmationResult,
   type User,
   RecaptchaVerifier,
-  createUserWithEmailAndPassword,
   onAuthStateChanged,
-  signInWithEmailAndPassword,
   signInWithPhoneNumber,
   signInWithPopup,
   signOut,
@@ -26,8 +24,6 @@ interface AuthContextValue {
   identitySynced: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithFacebook: () => Promise<void>;
-  signInWithEmail: (email: string, password: string) => Promise<void>;
-  signUpWithEmail: (email: string, password: string) => Promise<void>;
   sendPhoneCode: (phoneNumber: string, recaptchaContainerId: string) => Promise<ConfirmationResult>;
   logOut: () => Promise<void>;
 }
@@ -83,14 +79,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signInWithPopup(auth, facebookProvider);
   }
 
-  async function signInWithEmail(email: string, password: string) {
-    await signInWithEmailAndPassword(auth, email, password);
-  }
-
-  async function signUpWithEmail(email: string, password: string) {
-    await createUserWithEmailAndPassword(auth, email, password);
-  }
-
   async function sendPhoneCode(phoneNumber: string, recaptchaContainerId: string) {
     const verifier = new RecaptchaVerifier(auth, recaptchaContainerId, { size: "invisible" });
     return signInWithPhoneNumber(auth, phoneNumber, verifier);
@@ -111,8 +99,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         identitySynced,
         signInWithGoogle,
         signInWithFacebook,
-        signInWithEmail,
-        signUpWithEmail,
         sendPhoneCode,
         logOut,
       }}

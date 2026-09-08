@@ -3,9 +3,6 @@ import { Facebook, GraduationCap, Loader2, Phone } from "lucide-react";
 import type { ConfirmationResult } from "firebase/auth";
 import { useAuth } from "../../contexts/AuthContext";
 
-type Mode = "email" | "phone";
-type EmailAction = "login" | "signup";
-
 const RECAPTCHA_CONTAINER_ID = "recaptcha-container";
 
 function GoogleIcon() {
@@ -33,16 +30,6 @@ function GoogleIcon() {
 
 function errorMessage(code: string): string {
   switch (code) {
-    case "auth/user-not-found":
-    case "auth/wrong-password":
-    case "auth/invalid-credential":
-      return "Email hoặc mật khẩu không đúng.";
-    case "auth/email-already-in-use":
-      return "Email này đã được đăng ký, hãy đăng nhập thay vì đăng ký.";
-    case "auth/weak-password":
-      return "Mật khẩu quá yếu (tối thiểu 6 ký tự).";
-    case "auth/invalid-email":
-      return "Email không hợp lệ.";
     case "auth/invalid-phone-number":
       return "Số điện thoại không hợp lệ. Nhập theo định dạng quốc tế, ví dụ +84912345678.";
     case "auth/invalid-verification-code":
@@ -54,18 +41,14 @@ function errorMessage(code: string): string {
     case "auth/popup-closed-by-user":
       return "Bạn đã đóng cửa sổ đăng nhập trước khi hoàn tất.";
     case "auth/account-exists-with-different-credential":
-      return "Email này đã được đăng ký bằng một phương thức khác (ví dụ email/mật khẩu). Hãy đăng nhập bằng phương thức đó trước.";
+      return "Email này đã được đăng ký bằng một phương thức khác. Hãy đăng nhập bằng phương thức đó thay vì phương thức này.";
     default:
       return "Có lỗi xảy ra, vui lòng thử lại.";
   }
 }
 
 export default function LoginScreen() {
-  const { configured, signInWithGoogle, signInWithFacebook, signInWithEmail, signUpWithEmail, sendPhoneCode } = useAuth();
-  const [mode, setMode] = useState<Mode>("email");
-  const [emailAction, setEmailAction] = useState<EmailAction>("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const { configured, signInWithGoogle, signInWithFacebook, sendPhoneCode } = useAuth();
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(null);
@@ -82,15 +65,6 @@ export default function LoginScreen() {
       setError(errorMessage(code));
     } finally {
       setBusy(false);
-    }
-  }
-
-  function handleEmailSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (emailAction === "login") {
-      runAction(() => signInWithEmail(email, password));
-    } else {
-      runAction(() => signUpWithEmail(email, password));
     }
   }
 
@@ -157,65 +131,11 @@ export default function LoginScreen() {
 
         <div className="mb-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-brand-900/40">
           <div className="h-px flex-1 bg-brand-100" />
-          hoặc
+          hoặc dùng số điện thoại
           <div className="h-px flex-1 bg-brand-100" />
         </div>
 
-        <div className="mb-5 flex rounded-full bg-brand-50 p-1 text-sm font-semibold">
-          <button
-            type="button"
-            onClick={() => setMode("email")}
-            className={`flex-1 rounded-full py-2 transition ${mode === "email" ? "bg-white text-brand-700 shadow" : "text-brand-900/60"}`}
-          >
-            Email
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode("phone")}
-            className={`flex-1 rounded-full py-2 transition ${mode === "phone" ? "bg-white text-brand-700 shadow" : "text-brand-900/60"}`}
-          >
-            Số điện thoại
-          </button>
-        </div>
-
-        {mode === "email" && (
-          <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3">
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
-              className="rounded-full border border-brand-100 px-4 py-3 text-sm outline-none focus:border-brand-400"
-            />
-            <input
-              type="password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Mật khẩu"
-              className="rounded-full border border-brand-100 px-4 py-3 text-sm outline-none focus:border-brand-400"
-            />
-            <button
-              type="submit"
-              disabled={busy}
-              className="mt-1 inline-flex items-center justify-center gap-2 rounded-full bg-brand-500 px-5 py-3 font-semibold text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-              {emailAction === "login" ? "Đăng nhập" : "Đăng ký"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setEmailAction((a) => (a === "login" ? "signup" : "login"))}
-              className="text-center text-sm font-semibold text-brand-600 hover:underline"
-            >
-              {emailAction === "login" ? "Chưa có tài khoản? Đăng ký" : "Đã có tài khoản? Đăng nhập"}
-            </button>
-          </form>
-        )}
-
-        {mode === "phone" && !confirmation && (
+        {!confirmation && (
           <form onSubmit={handleSendOtp} className="flex flex-col gap-3">
             <div className="inline-flex items-center gap-2 rounded-full border border-brand-100 px-4 py-3">
               <Phone className="h-4 w-4 shrink-0 text-brand-500" />
@@ -240,7 +160,7 @@ export default function LoginScreen() {
           </form>
         )}
 
-        {mode === "phone" && confirmation && (
+        {confirmation && (
           <form onSubmit={handleConfirmOtp} className="flex flex-col gap-3">
             <input
               type="text"
