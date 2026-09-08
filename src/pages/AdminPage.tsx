@@ -37,7 +37,7 @@ function formatProgress(p: LoginRecord["progress"]): string {
   return `${p.knownCount}/${p.totalVocab} từ · ${levelPart}`;
 }
 
-type IdentifierFilter = "all" | "email" | "phone";
+type IdentifierFilter = "all" | "email" | "phone" | "facebook";
 
 export default function AdminPage() {
   const { logOut } = useAuth();
@@ -72,6 +72,7 @@ export default function AdminPage() {
   const filteredLogins = logins.filter((row) => {
     if (filter === "email") return row.email !== null;
     if (filter === "phone") return row.phoneNumber !== null;
+    if (filter === "facebook") return row.providers.includes("facebook.com");
     return true;
   });
 
@@ -135,6 +136,7 @@ export default function AdminPage() {
               { key: "all", label: "Tất cả" },
               { key: "email", label: "Email" },
               { key: "phone", label: "Số điện thoại" },
+              { key: "facebook", label: "Facebook" },
             ] as { key: IdentifierFilter; label: string }[]
           ).map((opt) => (
             <button
