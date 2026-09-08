@@ -20,7 +20,7 @@ function emptySkillScores(): LevelSkillScores {
   return { listening: null, speaking: null, reading: null, writing: null };
 }
 
-function createEmptyScores(): LevelScoresMap {
+export function createEmptyScores(): LevelScoresMap {
   return {
     A1: emptySkillScores(),
     A2: emptySkillScores(),
@@ -81,6 +81,11 @@ export function useLevelProgress(knownIds: string[]) {
     });
   }
 
+  function applyCloudScores(scores: LevelScoresMap, level: CEFRLevel | null) {
+    setLevelScores(scores);
+    setPlacementLevel(level);
+  }
+
   const placementIndex = placementLevel ? levels.findIndex((l) => l.id === placementLevel) : -1;
 
   const progress: LevelProgress[] = [];
@@ -123,5 +128,5 @@ export function useLevelProgress(knownIds: string[]) {
     previousPassed = levelPassed;
   }
 
-  return { recordScore, progress, placementLevel, applyPlacement };
+  return { recordScore, progress, placementLevel, applyPlacement, levelScores, applyCloudScores };
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
@@ -15,9 +15,9 @@ import LoginScreen from "./components/auth/LoginScreen";
 import AccessDeniedScreen from "./components/auth/AccessDeniedScreen";
 import AdminPage from "./pages/AdminPage";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { syncProgress } from "./lib/members";
+import { loadLearningData, saveLearningData, syncProgress } from "./lib/members";
 import { useLocalStorage } from "./hooks/useLocalStorage";
-import { useLevelProgress } from "./hooks/useLevelProgress";
+import { createEmptyScores, useLevelProgress } from "./hooks/useLevelProgress";
 import { vocabulary } from "./data/vocabulary";
 import { levelVocabulary } from "./data/levelVocabulary";
 
@@ -32,7 +32,50 @@ function AppContent() {
   const { user, loading, configured, isAdmin, authorized, identitySynced } = useAuth();
   const [route, setRoute] = useState(() => window.location.hash);
   const [knownIds, setKnownIds] = useLocalStorage<string[]>("engup-known-words", []);
-  const { recordScore, progress, placementLevel, applyPlacement } = useLevelProgress(knownIds);
+  const { recordScore, progress, placementLevel, applyPlacement, levelScores, applyCloudScores } =
+    useLevelProgress(knownIds);
+
+  // Each account's learning progress (known words, level scores, placement)
+  // lives in Firestore under its own uid, so two different logins on the
+  // same browser never see each other's data. progressReady gates the main
+  // app screen until the signed-in account's own cloud data has been pulled
+  // down and applied — otherwise the page would flash whatever was left in
+  // this browser's local cache from a previous account before snapping to
+  // the right numbers.
+  const [progressReady, setProgressReady] = useState(false);
+  const loadedUidRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!user || !authorized) {
+      loadedUidRef.current = null;
+      setProgressReady(false);
+      return;
+    }
+    if (loadedUidRef.current === user.uid) return;
+    let cancelled = false;
+    setProgressReady(false);
+    loadLearningData(user.uid)
+      .then((data) => {
+        if (cancelled) return;
+        if (data) {
+          setKnownIds(data.knownIds);
+          applyCloudScores(data.levelScores, data.placementLevel);
+        } else {
+          setKnownIds([]);
+          applyCloudScores(createEmptyScores(), null);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (cancelled) return;
+        loadedUidRef.current = user.uid;
+        setProgressReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, authorized]);
 
   useEffect(() => {
     function handleHashChange() {
@@ -82,6 +125,11 @@ function AppContent() {
     currentLevelPassed,
   ]);
 
+  useEffect(() => {
+    if (!user || !authorized || !progressReady) return;
+    saveLearningData(user.uid, { knownIds, levelScores, placementLevel }).catch(() => {});
+  }, [user, authorized, progressReady, knownIds, levelScores, placementLevel]);
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f7fbf9]">
@@ -96,6 +144,14 @@ function AppContent() {
 
   if (!authorized) {
     return <AccessDeniedScreen />;
+  }
+
+  if (!progressReady) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f7fbf9]">
+        <Loader2 className="h-8 w-8 animate-spin text-brand-500" />
+      </div>
+    );
   }
 
   let page: ReactNode;

@@ -10,6 +10,7 @@ import {
 } from "firebase/firestore";
 import type { User } from "firebase/auth";
 import { ADMIN_EMAIL, db } from "./firebase";
+import type { CEFRLevel, LevelScoresMap } from "../types";
 
 export interface BlockedEntry {
   id: string;
@@ -108,6 +109,26 @@ export async function listLoginRecords(): Promise<LoginRecord[]> {
 // Merges into the same per-uid doc as recordLogin — same self-write rule.
 export async function syncProgress(uid: string, progress: ProgressSummary): Promise<void> {
   await setDoc(doc(db, "users", uid), { progress }, { merge: true });
+}
+
+export interface LearningData {
+  knownIds: string[];
+  levelScores: LevelScoresMap;
+  placementLevel: CEFRLevel | null;
+}
+
+// The full per-account learning state (which words are known, quiz scores,
+// placement level) — kept separate from the small `progress` summary above
+// so listing every user for the admin panel never has to pull everyone's
+// full word lists. Only loaded for the account that's actually signing in.
+export async function loadLearningData(uid: string): Promise<LearningData | null> {
+  const snap = await getDoc(doc(db, "users", uid));
+  const data = snap.data()?.learningData;
+  return data ? (data as LearningData) : null;
+}
+
+export async function saveLearningData(uid: string, data: LearningData): Promise<void> {
+  await setDoc(doc(db, "users", uid), { learningData: data }, { merge: true });
 }
 
 export async function listBlocked(): Promise<BlockedEntry[]> {
