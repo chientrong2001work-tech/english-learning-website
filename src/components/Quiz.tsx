@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Award, Check, RotateCcw, X } from "lucide-react";
 import { vocabulary } from "../data/vocabulary";
 import { useLocalStorage } from "../hooks/useLocalStorage";
+import PosTag from "./PosTag";
 import type { VocabWord } from "../types";
 
 const QUESTIONS_PER_ROUND = 10;
@@ -113,6 +114,9 @@ export default function Quiz() {
                 <h3 className="mt-2 font-display text-4xl font-bold text-brand-900">
                   {question.word.word}
                 </h3>
+                <div className="mt-1 flex justify-center">
+                  <PosTag pos={question.word.pos} />
+                </div>
                 <p className="text-brand-900/40">{question.word.ipa}</p>
               </div>
 

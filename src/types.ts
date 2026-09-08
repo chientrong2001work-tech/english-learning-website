@@ -1,3 +1,21 @@
+// Primary part of speech shown next to a word. WordNet only tags open-class
+// content words (noun/verb/adjective/adverb); the rest were hand-curated
+// since WordNet doesn't cover closed-class function words at all.
+export type PosCode =
+  | "n"
+  | "v"
+  | "adj"
+  | "adv"
+  | "prep"
+  | "conj"
+  | "pron"
+  | "det"
+  | "art"
+  | "num"
+  | "interj"
+  | "phr"
+  | "phrv";
+
 export type CategoryId =
   | "everyday"
   | "travel"
@@ -23,6 +41,7 @@ export interface VocabWord {
   example: string;
   exampleMeaning: string;
   emoji?: string;
+  pos?: PosCode;
 }
 
 export interface GrammarTip {
@@ -50,6 +69,7 @@ export interface LevelVocabWord {
   example?: string;
   exampleMeaning?: string;
   emoji?: string;
+  pos?: PosCode;
 }
 
 export interface ReadingQuestion {

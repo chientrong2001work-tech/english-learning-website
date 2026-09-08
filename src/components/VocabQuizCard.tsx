@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { Check, Volume2 } from "lucide-react";
 import { speak } from "../lib/speech";
 import { sample, shuffle } from "../lib/array";
+import PosTag from "./PosTag";
+import type { PosCode } from "../types";
 
 export interface QuizWord {
   id: string;
@@ -11,6 +13,7 @@ export interface QuizWord {
   emoji?: string;
   example?: string;
   exampleMeaning?: string;
+  pos?: PosCode;
 }
 
 interface VocabQuizCardProps {
@@ -51,6 +54,7 @@ export default function VocabQuizCard({ word, pool, isKnown, onAnswered, onNext 
           </span>
         )}
         <h3 className="font-display text-4xl font-bold text-brand-900">{word.word}</h3>
+        <PosTag pos={word.pos} />
         {word.ipa && <p className="text-brand-900/50">{word.ipa}</p>}
         <button
           onClick={() => speak(word.word)}

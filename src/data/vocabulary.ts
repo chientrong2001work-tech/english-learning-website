@@ -5,7 +5,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "everyday-1",
     category: "everyday",
-    word: "grateful",
+    word: "grateful", pos: "adj",
     ipa: "/ˈɡreɪtfl/",
     meaning: "biết ơn",
     example: "I'm really grateful for your help.",
@@ -14,7 +14,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "everyday-2",
     category: "everyday",
-    word: "exhausted",
+    word: "exhausted", pos: "adj",
     ipa: "/ɪɡˈzɔːstɪd/",
     meaning: "kiệt sức",
     example: "She felt exhausted after the long day.",
@@ -23,7 +23,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "everyday-3",
     category: "everyday",
-    word: "convenient",
+    word: "convenient", pos: "adj",
     ipa: "/kənˈviːniənt/",
     meaning: "thuận tiện",
     example: "Is it convenient to talk right now?",
@@ -32,7 +32,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "everyday-4",
     category: "everyday",
-    word: "apologize",
+    word: "apologize", pos: "v",
     emoji: "🙏",
     ipa: "/əˈpɒlədʒaɪz/",
     meaning: "xin lỗi",
@@ -42,7 +42,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "everyday-5",
     category: "everyday",
-    word: "reliable",
+    word: "reliable", pos: "adj",
     ipa: "/rɪˈlaɪəbl/",
     meaning: "đáng tin cậy",
     example: "My neighbor is a reliable person.",
@@ -51,7 +51,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "everyday-6",
     category: "everyday",
-    word: "curious",
+    word: "curious", pos: "adj",
     ipa: "/ˈkjʊəriəs/",
     meaning: "tò mò",
     example: "The kids were curious about the new toy.",
@@ -60,7 +60,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "everyday-7",
     category: "everyday",
-    word: "postpone",
+    word: "postpone", pos: "v",
     ipa: "/pəˈspəʊn/",
     meaning: "hoãn lại",
     example: "We had to postpone the meeting.",
@@ -69,7 +69,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "everyday-8",
     category: "everyday",
-    word: "roommate",
+    word: "roommate", pos: "n",
     emoji: "🏠",
     ipa: "/ˈruːmmeɪt/",
     meaning: "bạn cùng phòng",
@@ -79,7 +79,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "everyday-9",
     category: "everyday",
-    word: "borrow",
+    word: "borrow", pos: "v",
     emoji: "🤝",
     ipa: "/ˈbɒrəʊ/",
     meaning: "mượn",
@@ -89,7 +89,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "everyday-10",
     category: "everyday",
-    word: "argument",
+    word: "argument", pos: "n",
     ipa: "/ˈɑːɡjumənt/",
     meaning: "cuộc tranh cãi",
     example: "They had an argument about money.",
@@ -98,7 +98,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "everyday-11",
     category: "everyday",
-    word: "relieved",
+    word: "relieved", pos: "adj",
     ipa: "/rɪˈliːvd/",
     meaning: "nhẹ nhõm",
     example: "I felt relieved when I heard the good news.",
@@ -107,7 +107,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "everyday-12",
     category: "everyday",
-    word: "embarrassed",
+    word: "embarrassed", pos: "adj",
     emoji: "😳",
     ipa: "/ɪmˈbærəst/",
     meaning: "xấu hổ",
@@ -117,7 +117,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "everyday-13",
     category: "everyday",
-    word: "neighbor",
+    word: "neighbor", pos: "n",
     emoji: "🏘️",
     ipa: "/ˈneɪbə(r)/",
     meaning: "hàng xóm",
@@ -127,7 +127,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "everyday-14",
     category: "everyday",
-    word: "habit",
+    word: "habit", pos: "n",
     ipa: "/ˈhæbɪt/",
     meaning: "thói quen",
     example: "Reading before bed is a good habit.",
@@ -136,7 +136,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "everyday-15",
     category: "everyday",
-    word: "remind",
+    word: "remind", pos: "v",
     ipa: "/rɪˈmaɪnd/",
     meaning: "nhắc nhở",
     example: "Please remind me to call her.",
@@ -147,7 +147,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "travel-1",
     category: "travel",
-    word: "itinerary",
+    word: "itinerary", pos: "n",
     ipa: "/aɪˈtɪnərəri/",
     meaning: "lịch trình",
     example: "Our itinerary includes three cities.",
@@ -156,7 +156,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "travel-2",
     category: "travel",
-    word: "luggage",
+    word: "luggage", pos: "n",
     emoji: "🧳",
     ipa: "/ˈlʌɡɪdʒ/",
     meaning: "hành lý",
@@ -166,7 +166,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "travel-3",
     category: "travel",
-    word: "departure",
+    word: "departure", pos: "n",
     emoji: "🛫",
     ipa: "/dɪˈpɑːtʃə(r)/",
     meaning: "sự khởi hành",
@@ -176,7 +176,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "travel-4",
     category: "travel",
-    word: "accommodation",
+    word: "accommodation", pos: "n",
     emoji: "🏨",
     ipa: "/əˌkɒməˈdeɪʃn/",
     meaning: "chỗ ở",
@@ -186,7 +186,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "travel-5",
     category: "travel",
-    word: "souvenir",
+    word: "souvenir", pos: "n",
     emoji: "🎁",
     ipa: "/ˌsuːvəˈnɪə(r)/",
     meaning: "quà lưu niệm",
@@ -196,7 +196,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "travel-6",
     category: "travel",
-    word: "customs",
+    word: "customs", pos: "n",
     emoji: "🛃",
     ipa: "/ˈkʌstəmz/",
     meaning: "hải quan",
@@ -206,7 +206,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "travel-7",
     category: "travel",
-    word: "destination",
+    word: "destination", pos: "n",
     emoji: "📍",
     ipa: "/ˌdestɪˈneɪʃn/",
     meaning: "điểm đến",
@@ -216,7 +216,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "travel-8",
     category: "travel",
-    word: "delay",
+    word: "delay", pos: "v",
     emoji: "⏱️",
     ipa: "/dɪˈleɪ/",
     meaning: "sự trì hoãn",
@@ -226,7 +226,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "travel-9",
     category: "travel",
-    word: "passenger",
+    word: "passenger", pos: "n",
     emoji: "🧳",
     ipa: "/ˈpæsɪndʒə(r)/",
     meaning: "hành khách",
@@ -236,7 +236,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "travel-10",
     category: "travel",
-    word: "scenery",
+    word: "scenery", pos: "n",
     emoji: "🏞️",
     ipa: "/ˈsiːnəri/",
     meaning: "phong cảnh",
@@ -246,7 +246,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "travel-11",
     category: "travel",
-    word: "boarding pass",
+    word: "boarding pass", pos: "n",
     emoji: "🎫",
     ipa: "/ˈbɔːdɪŋ pɑːs/",
     meaning: "thẻ lên máy bay",
@@ -256,7 +256,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "travel-12",
     category: "travel",
-    word: "currency",
+    word: "currency", pos: "n",
     emoji: "💱",
     ipa: "/ˈkʌrənsi/",
     meaning: "tiền tệ",
@@ -266,7 +266,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "travel-13",
     category: "travel",
-    word: "explore",
+    word: "explore", pos: "v",
     emoji: "🧭",
     ipa: "/ɪkˈsplɔː(r)/",
     meaning: "khám phá",
@@ -276,7 +276,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "travel-14",
     category: "travel",
-    word: "journey",
+    word: "journey", pos: "v",
     emoji: "🧳",
     ipa: "/ˈdʒɜːni/",
     meaning: "hành trình",
@@ -286,7 +286,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "travel-15",
     category: "travel",
-    word: "local",
+    word: "local", pos: "adj",
     emoji: "📍",
     ipa: "/ˈləʊkl/",
     meaning: "(thuộc) địa phương",
@@ -298,7 +298,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "work-1",
     category: "work",
-    word: "deadline",
+    word: "deadline", pos: "n",
     emoji: "⏰",
     ipa: "/ˈdedlaɪn/",
     meaning: "hạn chót",
@@ -308,7 +308,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "work-2",
     category: "work",
-    word: "colleague",
+    word: "colleague", pos: "n",
     emoji: "🧑‍🤝‍🧑",
     ipa: "/ˈkɒliːɡ/",
     meaning: "đồng nghiệp",
@@ -318,7 +318,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "work-3",
     category: "work",
-    word: "negotiate",
+    word: "negotiate", pos: "v",
     ipa: "/nɪˈɡəʊʃieɪt/",
     meaning: "đàm phán",
     example: "They negotiated a better price.",
@@ -327,7 +327,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "work-4",
     category: "work",
-    word: "promotion",
+    word: "promotion", pos: "n",
     emoji: "📈",
     ipa: "/prəˈməʊʃn/",
     meaning: "sự thăng chức",
@@ -337,7 +337,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "work-5",
     category: "work",
-    word: "resign",
+    word: "resign", pos: "v",
     emoji: "📤",
     ipa: "/rɪˈzaɪn/",
     meaning: "từ chức",
@@ -347,7 +347,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "work-6",
     category: "work",
-    word: "candidate",
+    word: "candidate", pos: "n",
     emoji: "🙋",
     ipa: "/ˈkændɪdət/",
     meaning: "ứng viên",
@@ -357,7 +357,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "work-7",
     category: "work",
-    word: "efficient",
+    word: "efficient", pos: "adj",
     ipa: "/ɪˈfɪʃnt/",
     meaning: "hiệu quả",
     example: "This is a more efficient way to work.",
@@ -366,7 +366,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "work-8",
     category: "work",
-    word: "budget",
+    word: "budget", pos: "n",
     emoji: "💰",
     ipa: "/ˈbʌdʒɪt/",
     meaning: "ngân sách",
@@ -376,7 +376,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "work-9",
     category: "work",
-    word: "supervisor",
+    word: "supervisor", pos: "n",
     emoji: "🧑‍💼",
     ipa: "/ˈsuːpəvaɪzə(r)/",
     meaning: "người giám sát",
@@ -386,7 +386,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "work-10",
     category: "work",
-    word: "achievement",
+    word: "achievement", pos: "n",
     emoji: "🏆",
     ipa: "/əˈtʃiːvmənt/",
     meaning: "thành tựu",
@@ -396,7 +396,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "work-11",
     category: "work",
-    word: "teamwork",
+    word: "teamwork", pos: "n",
     emoji: "🧑‍🤝‍🧑",
     ipa: "/ˈtiːmwɜːk/",
     meaning: "làm việc nhóm",
@@ -406,7 +406,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "work-12",
     category: "work",
-    word: "schedule",
+    word: "schedule", pos: "n",
     emoji: "📅",
     ipa: "/ˈʃedjuːl/",
     meaning: "lịch trình",
@@ -416,7 +416,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "work-13",
     category: "work",
-    word: "skill",
+    word: "skill", pos: "n",
     emoji: "💪",
     ipa: "/skɪl/",
     meaning: "kỹ năng",
@@ -426,7 +426,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "work-14",
     category: "work",
-    word: "overtime",
+    word: "overtime", pos: "n",
     ipa: "/ˈəʊvətaɪm/",
     meaning: "làm thêm giờ",
     example: "He worked overtime to finish the report.",
@@ -435,7 +435,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "work-15",
     category: "work",
-    word: "client",
+    word: "client", pos: "n",
     emoji: "🧑‍💼",
     ipa: "/ˈklaɪənt/",
     meaning: "khách hàng",
@@ -447,7 +447,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "food-1",
     category: "food",
-    word: "delicious",
+    word: "delicious", pos: "adj",
     emoji: "😋",
     ipa: "/dɪˈlɪʃəs/",
     meaning: "ngon",
@@ -457,7 +457,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "food-2",
     category: "food",
-    word: "recipe",
+    word: "recipe", pos: "n",
     emoji: "📖",
     ipa: "/ˈresəpi/",
     meaning: "công thức nấu ăn",
@@ -467,7 +467,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "food-3",
     category: "food",
-    word: "ingredient",
+    word: "ingredient", pos: "n",
     emoji: "🥕",
     ipa: "/ɪnˈɡriːdiənt/",
     meaning: "nguyên liệu",
@@ -477,7 +477,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "food-4",
     category: "food",
-    word: "leftovers",
+    word: "leftovers", pos: "n",
     ipa: "/ˈleftəʊvəz/",
     meaning: "đồ ăn thừa",
     example: "We had leftovers for lunch.",
@@ -486,7 +486,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "food-5",
     category: "food",
-    word: "appetite",
+    word: "appetite", pos: "n",
     ipa: "/ˈæpɪtaɪt/",
     meaning: "sự thèm ăn",
     example: "Exercise gives me a big appetite.",
@@ -495,7 +495,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "food-6",
     category: "food",
-    word: "spicy",
+    word: "spicy", pos: "adj",
     emoji: "🌶️",
     ipa: "/ˈspaɪsi/",
     meaning: "cay",
@@ -505,7 +505,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "food-7",
     category: "food",
-    word: "sour",
+    word: "sour", pos: "adj",
     emoji: "🍋",
     ipa: "/ˈsaʊə(r)/",
     meaning: "chua",
@@ -515,7 +515,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "food-8",
     category: "food",
-    word: "reservation",
+    word: "reservation", pos: "n",
     emoji: "📅",
     ipa: "/ˌrezəˈveɪʃn/",
     meaning: "sự đặt chỗ",
@@ -525,7 +525,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "food-9",
     category: "food",
-    word: "beverage",
+    word: "beverage", pos: "n",
     ipa: "/ˈbevərɪdʒ/",
     meaning: "đồ uống",
     example: "What beverage would you like?",
@@ -534,7 +534,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "food-10",
     category: "food",
-    word: "aftertaste",
+    word: "aftertaste", pos: "n",
     ipa: "/ˈɑːftəteɪst/",
     meaning: "dư vị",
     example: "This tea has a sweet aftertaste.",
@@ -543,7 +543,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "food-11",
     category: "food",
-    word: "flavor",
+    word: "flavor", pos: "n",
     emoji: "😋",
     ipa: "/ˈfleɪvə(r)/",
     meaning: "hương vị",
@@ -553,7 +553,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "food-12",
     category: "food",
-    word: "fresh",
+    word: "fresh", pos: "adj",
     emoji: "🥬",
     ipa: "/freʃ/",
     meaning: "tươi",
@@ -563,7 +563,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "food-13",
     category: "food",
-    word: "portion",
+    word: "portion", pos: "n",
     emoji: "🍽️",
     ipa: "/ˈpɔːʃn/",
     meaning: "khẩu phần",
@@ -573,7 +573,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "food-14",
     category: "food",
-    word: "snack",
+    word: "snack", pos: "n",
     emoji: "🍿",
     ipa: "/snæk/",
     meaning: "đồ ăn vặt",
@@ -583,7 +583,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "food-15",
     category: "food",
-    word: "allergy",
+    word: "allergy", pos: "n",
     emoji: "🤧",
     ipa: "/ˈælədʒi/",
     meaning: "dị ứng",
@@ -595,7 +595,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "family-1",
     category: "family",
-    word: "sibling",
+    word: "sibling", pos: "n",
     emoji: "🧑‍🤝‍🧑",
     ipa: "/ˈsɪblɪŋ/",
     meaning: "anh chị em ruột",
@@ -605,7 +605,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "family-2",
     category: "family",
-    word: "relative",
+    word: "relative", pos: "n",
     ipa: "/ˈrelətɪv/",
     meaning: "họ hàng",
     example: "Many relatives came to the wedding.",
@@ -614,7 +614,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "family-3",
     category: "family",
-    word: "spouse",
+    word: "spouse", pos: "n",
     emoji: "💑",
     ipa: "/spaʊs/",
     meaning: "vợ/chồng",
@@ -624,7 +624,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "family-4",
     category: "family",
-    word: "upbringing",
+    word: "upbringing", pos: "n",
     ipa: "/ˈʌpbrɪŋɪŋ/",
     meaning: "cách nuôi dạy",
     example: "She had a strict upbringing.",
@@ -633,7 +633,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "family-5",
     category: "family",
-    word: "household",
+    word: "household", pos: "n",
     emoji: "🏠",
     ipa: "/ˈhaʊshəʊld/",
     meaning: "hộ gia đình",
@@ -643,7 +643,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "family-6",
     category: "family",
-    word: "generation",
+    word: "generation", pos: "n",
     emoji: "👨‍👩‍👧‍👦",
     ipa: "/ˌdʒenəˈreɪʃn/",
     meaning: "thế hệ",
@@ -653,7 +653,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "family-7",
     category: "family",
-    word: "toddler",
+    word: "toddler", pos: "n",
     ipa: "/ˈtɒdlə(r)/",
     meaning: "trẻ mới biết đi",
     example: "The toddler is learning to walk.",
@@ -662,7 +662,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "family-8",
     category: "family",
-    word: "elderly",
+    word: "elderly", pos: "n",
     ipa: "/ˈeldəli/",
     meaning: "người cao tuổi",
     example: "We should take care of the elderly.",
@@ -671,7 +671,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "family-9",
     category: "family",
-    word: "nurture",
+    word: "nurture", pos: "v",
     ipa: "/ˈnɜːtʃə(r)/",
     meaning: "nuôi dưỡng",
     example: "Parents nurture their children with love.",
@@ -680,7 +680,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "family-10",
     category: "family",
-    word: "bond",
+    word: "bond", pos: "n",
     ipa: "/bɒnd/",
     meaning: "mối gắn kết",
     example: "They share a strong bond.",
@@ -689,7 +689,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "family-11",
     category: "family",
-    word: "inherit",
+    word: "inherit", pos: "v",
     ipa: "/ɪnˈherɪt/",
     meaning: "thừa hưởng",
     example: "She inherited her mother's eyes.",
@@ -698,7 +698,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "family-12",
     category: "family",
-    word: "reunion",
+    word: "reunion", pos: "n",
     emoji: "🤗",
     ipa: "/riːˈjuːniən/",
     meaning: "buổi đoàn tụ",
@@ -708,7 +708,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "family-13",
     category: "family",
-    word: "resemble",
+    word: "resemble", pos: "v",
     ipa: "/rɪˈzembl/",
     meaning: "giống",
     example: "He resembles his father a lot.",
@@ -717,7 +717,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "family-14",
     category: "family",
-    word: "custody",
+    word: "custody", pos: "n",
     ipa: "/ˈkʌstədi/",
     meaning: "quyền nuôi con",
     example: "She has custody of the children.",
@@ -726,7 +726,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "family-15",
     category: "family",
-    word: "supportive",
+    word: "supportive", pos: "adj",
     emoji: "🤝",
     ipa: "/səˈpɔːtɪv/",
     meaning: "luôn ủng hộ",
@@ -738,7 +738,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "shopping-1",
     category: "shopping",
-    word: "receipt",
+    word: "receipt", pos: "n",
     emoji: "🧾",
     ipa: "/rɪˈsiːt/",
     meaning: "hóa đơn",
@@ -748,7 +748,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "shopping-2",
     category: "shopping",
-    word: "discount",
+    word: "discount", pos: "n",
     emoji: "🏷️",
     ipa: "/ˈdɪskaʊnt/",
     meaning: "giảm giá",
@@ -758,7 +758,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "shopping-3",
     category: "shopping",
-    word: "refund",
+    word: "refund", pos: "n",
     emoji: "💰",
     ipa: "/ˈriːfʌnd/",
     meaning: "hoàn tiền",
@@ -768,7 +768,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "shopping-4",
     category: "shopping",
-    word: "checkout",
+    word: "checkout", pos: "n",
     emoji: "🛒",
     ipa: "/ˈtʃekaʊt/",
     meaning: "quầy thanh toán",
@@ -778,7 +778,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "shopping-5",
     category: "shopping",
-    word: "bargain",
+    word: "bargain", pos: "n",
     emoji: "🏷️",
     ipa: "/ˈbɑːɡən/",
     meaning: "món hời",
@@ -788,7 +788,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "shopping-6",
     category: "shopping",
-    word: "purchase",
+    word: "purchase", pos: "n",
     emoji: "🛒",
     ipa: "/ˈpɜːtʃəs/",
     meaning: "mua hàng",
@@ -798,7 +798,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "shopping-7",
     category: "shopping",
-    word: "afford",
+    word: "afford", pos: "v",
     ipa: "/əˈfɔːd/",
     meaning: "đủ khả năng chi trả",
     example: "We can't afford a new car right now.",
@@ -807,7 +807,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "shopping-8",
     category: "shopping",
-    word: "cashier",
+    word: "cashier", pos: "n",
     emoji: "🧑‍💼",
     ipa: "/kæˈʃɪə(r)/",
     meaning: "thu ngân",
@@ -817,7 +817,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "shopping-9",
     category: "shopping",
-    word: "sale",
+    word: "sale", pos: "n",
     emoji: "🏷️",
     ipa: "/seɪl/",
     meaning: "đợt giảm giá",
@@ -827,7 +827,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "shopping-10",
     category: "shopping",
-    word: "exchange",
+    word: "exchange", pos: "n",
     emoji: "🔄",
     ipa: "/ɪksˈtʃeɪndʒ/",
     meaning: "đổi hàng",
@@ -837,7 +837,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "shopping-11",
     category: "shopping",
-    word: "fitting room",
+    word: "fitting room", pos: "phr",
     ipa: "/ˈfɪtɪŋ ruːm/",
     meaning: "phòng thử đồ",
     example: "The fitting room is at the back.",
@@ -846,7 +846,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "shopping-12",
     category: "shopping",
-    word: "warranty",
+    word: "warranty", pos: "n",
     ipa: "/ˈwɒrənti/",
     meaning: "bảo hành",
     example: "This product comes with a one-year warranty.",
@@ -855,7 +855,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "shopping-13",
     category: "shopping",
-    word: "brand",
+    word: "brand", pos: "n",
     emoji: "🏷️",
     ipa: "/brænd/",
     meaning: "thương hiệu",
@@ -865,7 +865,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "shopping-14",
     category: "shopping",
-    word: "quality",
+    word: "quality", pos: "n",
     emoji: "⭐",
     ipa: "/ˈkwɒləti/",
     meaning: "chất lượng",
@@ -875,7 +875,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "shopping-15",
     category: "shopping",
-    word: "delivery",
+    word: "delivery", pos: "n",
     emoji: "📦",
     ipa: "/dɪˈlɪvəri/",
     meaning: "giao hàng",
@@ -887,7 +887,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "health-1",
     category: "health",
-    word: "symptom",
+    word: "symptom", pos: "n",
     emoji: "🤒",
     ipa: "/ˈsɪmptəm/",
     meaning: "triệu chứng",
@@ -897,7 +897,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "health-2",
     category: "health",
-    word: "prescription",
+    word: "prescription", pos: "n",
     emoji: "💊",
     ipa: "/prɪˈskrɪpʃn/",
     meaning: "đơn thuốc",
@@ -907,7 +907,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "health-3",
     category: "health",
-    word: "recover",
+    word: "recover", pos: "v",
     emoji: "🩹",
     ipa: "/rɪˈkʌvə(r)/",
     meaning: "hồi phục",
@@ -917,7 +917,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "health-4",
     category: "health",
-    word: "appointment",
+    word: "appointment", pos: "n",
     emoji: "📅",
     ipa: "/əˈpɔɪntmənt/",
     meaning: "lịch hẹn",
@@ -927,7 +927,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "health-5",
     category: "health",
-    word: "injury",
+    word: "injury", pos: "n",
     emoji: "🤕",
     ipa: "/ˈɪndʒəri/",
     meaning: "chấn thương",
@@ -937,7 +937,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "health-6",
     category: "health",
-    word: "exercise",
+    word: "exercise", pos: "n",
     emoji: "🏋️",
     ipa: "/ˈeksəsaɪz/",
     meaning: "tập thể dục",
@@ -947,7 +947,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "health-7",
     category: "health",
-    word: "nutrition",
+    word: "nutrition", pos: "n",
     ipa: "/njuˈtrɪʃn/",
     meaning: "dinh dưỡng",
     example: "Good nutrition is essential for children.",
@@ -956,7 +956,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "health-8",
     category: "health",
-    word: "treatment",
+    word: "treatment", pos: "n",
     emoji: "💊",
     ipa: "/ˈtriːtmənt/",
     meaning: "phương pháp điều trị",
@@ -966,7 +966,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "health-9",
     category: "health",
-    word: "immune",
+    word: "immune", pos: "adj",
     emoji: "🛡️",
     ipa: "/ɪˈmjuːn/",
     meaning: "miễn dịch",
@@ -976,7 +976,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "health-10",
     category: "health",
-    word: "fatigue",
+    word: "fatigue", pos: "n",
     emoji: "😴",
     ipa: "/fəˈtiːɡ/",
     meaning: "sự mệt mỏi",
@@ -986,7 +986,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "health-11",
     category: "health",
-    word: "checkup",
+    word: "checkup", pos: "n",
     emoji: "🩺",
     ipa: "/ˈtʃekʌp/",
     meaning: "khám sức khỏe định kỳ",
@@ -996,7 +996,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "health-12",
     category: "health",
-    word: "diagnose",
+    word: "diagnose", pos: "v",
     ipa: "/ˈdaɪəɡnəʊz/",
     meaning: "chẩn đoán",
     example: "The doctor diagnosed him with a cold.",
@@ -1005,7 +1005,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "health-13",
     category: "health",
-    word: "allergic",
+    word: "allergic", pos: "adj",
     emoji: "🤧",
     ipa: "/əˈlɜːdʒɪk/",
     meaning: "dị ứng (tính từ)",
@@ -1015,7 +1015,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "health-14",
     category: "health",
-    word: "wound",
+    word: "wound", pos: "n",
     emoji: "🩹",
     ipa: "/wuːnd/",
     meaning: "vết thương",
@@ -1025,7 +1025,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "health-15",
     category: "health",
-    word: "wellbeing",
+    word: "wellbeing", pos: "n",
     ipa: "/ˌwelˈbiːɪŋ/",
     meaning: "sự khỏe mạnh, an lành",
     example: "Sleep is important for your wellbeing.",
@@ -1036,7 +1036,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "technology-1",
     category: "technology",
-    word: "device",
+    word: "device", pos: "n",
     emoji: "📱",
     ipa: "/dɪˈvaɪs/",
     meaning: "thiết bị",
@@ -1046,7 +1046,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "technology-2",
     category: "technology",
-    word: "upload",
+    word: "upload", pos: "v",
     emoji: "⬆️",
     ipa: "/ʌpˈləʊd/",
     meaning: "tải lên",
@@ -1056,7 +1056,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "technology-3",
     category: "technology",
-    word: "download",
+    word: "download", pos: "v",
     emoji: "⬇️",
     ipa: "/daʊnˈləʊd/",
     meaning: "tải xuống",
@@ -1066,7 +1066,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "technology-4",
     category: "technology",
-    word: "software",
+    word: "software", pos: "n",
     emoji: "💻",
     ipa: "/ˈsɒftweə(r)/",
     meaning: "phần mềm",
@@ -1076,7 +1076,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "technology-5",
     category: "technology",
-    word: "password",
+    word: "password", pos: "n",
     emoji: "🔑",
     ipa: "/ˈpɑːswɜːd/",
     meaning: "mật khẩu",
@@ -1086,7 +1086,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "technology-6",
     category: "technology",
-    word: "battery",
+    word: "battery", pos: "n",
     emoji: "🔋",
     ipa: "/ˈbætri/",
     meaning: "pin",
@@ -1096,7 +1096,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "technology-7",
     category: "technology",
-    word: "wireless",
+    word: "wireless", pos: "n",
     emoji: "🛜",
     ipa: "/ˈwaɪələs/",
     meaning: "không dây",
@@ -1106,7 +1106,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "technology-8",
     category: "technology",
-    word: "storage",
+    word: "storage", pos: "n",
     emoji: "📦",
     ipa: "/ˈstɔːrɪdʒ/",
     meaning: "bộ nhớ lưu trữ",
@@ -1116,7 +1116,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "technology-9",
     category: "technology",
-    word: "update",
+    word: "update", pos: "v",
     ipa: "/ʌpˈdeɪt/",
     meaning: "cập nhật",
     example: "There's a new update available.",
@@ -1125,7 +1125,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "technology-10",
     category: "technology",
-    word: "crash",
+    word: "crash", pos: "v",
     emoji: "💥",
     ipa: "/kræʃ/",
     meaning: "bị treo/sập (máy)",
@@ -1135,7 +1135,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "technology-11",
     category: "technology",
-    word: "backup",
+    word: "backup", pos: "n",
     ipa: "/ˈbækʌp/",
     meaning: "sao lưu",
     example: "Always keep a backup of your files.",
@@ -1144,7 +1144,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "technology-12",
     category: "technology",
-    word: "screen",
+    word: "screen", pos: "n",
     emoji: "🖥️",
     ipa: "/skriːn/",
     meaning: "màn hình",
@@ -1154,7 +1154,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "technology-13",
     category: "technology",
-    word: "install",
+    word: "install", pos: "v",
     emoji: "🔧",
     ipa: "/ɪnˈstɔːl/",
     meaning: "cài đặt",
@@ -1164,7 +1164,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "technology-14",
     category: "technology",
-    word: "network",
+    word: "network", pos: "n",
     emoji: "🌐",
     ipa: "/ˈnetwɜːk/",
     meaning: "mạng lưới",
@@ -1174,7 +1174,7 @@ export const vocabulary: VocabWord[] = [
   {
     id: "technology-15",
     category: "technology",
-    word: "virtual",
+    word: "virtual", pos: "adj",
     ipa: "/ˈvɜːtʃuəl/",
     meaning: "ảo",
     example: "We attended a virtual meeting.",

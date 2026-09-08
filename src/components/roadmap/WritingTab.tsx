@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Check, RotateCcw, X } from "lucide-react";
 import { normalizeText } from "../../lib/speech";
 import { sample } from "../../lib/array";
+import PosTag from "../PosTag";
 import type { LevelVocabWord } from "../../types";
 
 const PROMPT_COUNT = 3;
@@ -57,8 +58,9 @@ export default function WritingTab({ words, onComplete }: WritingTabProps) {
         const passed = submitted ? checkAnswer(word) : null;
         return (
           <div key={word.id} className="rounded-2xl border border-brand-100 bg-white p-5">
-            <p className="mb-2 font-semibold text-brand-900">
-              Dùng từ: <span className="text-brand-600">{word.word}</span>{" "}
+            <p className="mb-2 flex flex-wrap items-center gap-2 font-semibold text-brand-900">
+              Dùng từ: <span className="text-brand-600">{word.word}</span>
+              <PosTag pos={word.pos} />
               <span className="font-normal text-brand-900/40">({word.meaning})</span>
             </p>
             <textarea
