@@ -7,7 +7,6 @@ import {
   GoogleAuthProvider,
   RecaptchaVerifier,
   createUserWithEmailAndPassword,
-  fetchSignInMethodsForEmail,
   linkWithCredential,
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -83,10 +82,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // When someone signs in with a provider whose account email is already
   // linked to a different provider (e.g. they signed up with Google, then
   // later try Facebook using the same email), Firebase refuses the sign-in
-  // rather than silently creating a second account for the same person. We
-  // resolve that by signing them in with the provider already on file, then
-  // linking the new provider's credential onto that same account, so both
-  // work from then on.
+  // rather than silently creating a second account for the same person.
+  // fetchSignInMethodsForEmail can't tell us which provider that is —
+  // Firebase's email-enumeration protection makes it always return an
+  // empty list — so instead we just try the other social provider we
+  // support (Google<->Facebook, the two this app offers) and link its
+  // credential onto that account. If the email turns out to be registered
+  // via email/password instead, that attempt fails the same way and the
+  // error propagates as-is, telling the user to sign in with that instead.
   async function signInWithProvider(provider: GoogleAuthProvider | FacebookAuthProvider) {
     try {
       await signInWithPopup(auth, provider);
@@ -98,15 +101,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         provider instanceof FacebookAuthProvider
           ? FacebookAuthProvider.credentialFromError(err as Parameters<typeof FacebookAuthProvider.credentialFromError>[0])
           : GoogleAuthProvider.credentialFromError(err as Parameters<typeof GoogleAuthProvider.credentialFromError>[0]);
-      const email = (err as { customData?: { email?: string } }).customData?.email;
-      if (!pendingCredential || !email) throw err;
+      if (!pendingCredential) throw err;
 
-      const [existingMethod] = await fetchSignInMethodsForEmail(auth, email);
-      const existingProvider =
-        existingMethod === "google.com" ? googleProvider : existingMethod === "facebook.com" ? facebookProvider : null;
-      if (!existingProvider) throw err;
-
-      const result = await signInWithPopup(auth, existingProvider);
+      const otherProvider = provider instanceof FacebookAuthProvider ? googleProvider : facebookProvider;
+      const result = await signInWithPopup(auth, otherProvider);
       await linkWithCredential(result.user, pendingCredential);
     }
   }
