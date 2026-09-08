@@ -44,15 +44,17 @@ export interface VocabWord {
   pos?: PosCode;
 }
 
-export interface GrammarTip {
+export type CEFRLevel = "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+
+export interface LevelGrammarPoint {
   id: string;
+  level: CEFRLevel;
   title: string;
   summary: string;
   structure: string;
   example: string;
+  exampleMeaning: string;
 }
-
-export type CEFRLevel = "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
 
 export interface LevelInfo {
   id: CEFRLevel;
@@ -86,13 +88,14 @@ export interface ReadingTest {
   questions: ReadingQuestion[];
 }
 
-export type SkillId = "listening" | "speaking" | "reading" | "writing";
+export type SkillId = "listening" | "speaking" | "reading" | "writing" | "grammar";
 
 export interface LevelSkillScores {
   listening: number | null;
   speaking: number | null;
   reading: number | null;
   writing: number | null;
+  grammar: number | null;
 }
 
 export type LevelScoresMap = Record<CEFRLevel, LevelSkillScores>;

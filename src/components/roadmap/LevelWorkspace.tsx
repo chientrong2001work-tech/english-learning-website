@@ -1,15 +1,16 @@
 import { useState } from "react";
-import { BookOpen, Check, Headphones, Mic, PenLine, PartyPopper, X } from "lucide-react";
+import { BookOpen, BookText, Check, Headphones, Mic, PenLine, PartyPopper, X } from "lucide-react";
 import VocabTab from "./VocabTab";
 import ListeningTab from "./ListeningTab";
 import SpeakingTab from "./SpeakingTab";
 import ReadingTab from "./ReadingTab";
 import WritingTab from "./WritingTab";
+import GrammarTab from "./GrammarTab";
 import { levels } from "../../data/levels";
 import { SKILL_PASS_RATIO, type LevelProgress } from "../../hooks/useLevelProgress";
 import type { CEFRLevel, SkillId } from "../../types";
 
-type TabId = "vocab" | "listening" | "speaking" | "reading" | "writing" | "summary";
+type TabId = "vocab" | "listening" | "speaking" | "reading" | "writing" | "grammar" | "summary";
 
 const tabs: { id: TabId; label: string; icon: typeof BookOpen }[] = [
   { id: "vocab", label: "Từ vựng", icon: BookOpen },
@@ -17,6 +18,7 @@ const tabs: { id: TabId; label: string; icon: typeof BookOpen }[] = [
   { id: "speaking", label: "Nói", icon: Mic },
   { id: "reading", label: "Đọc", icon: BookOpen },
   { id: "writing", label: "Viết", icon: PenLine },
+  { id: "grammar", label: "Ngữ pháp", icon: BookText },
   { id: "summary", label: "Tổng kết", icon: PartyPopper },
 ];
 
@@ -33,6 +35,7 @@ const skillLabels: Record<SkillId, string> = {
   speaking: "Nói",
   reading: "Đọc",
   writing: "Viết",
+  grammar: "Ngữ pháp",
 };
 
 export default function LevelWorkspace({
@@ -95,11 +98,14 @@ export default function LevelWorkspace({
       {activeTab === "writing" && (
         <WritingTab key={level} words={progress.words} onComplete={(pct) => onRecordScore(level, "writing", pct)} />
       )}
+      {activeTab === "grammar" && (
+        <GrammarTab key={level} level={level} onComplete={(pct) => onRecordScore(level, "grammar", pct)} />
+      )}
       {activeTab === "summary" && (
         <div className="mx-auto max-w-lg space-y-5 text-center">
           <p className="text-sm text-brand-900/60">
             Để mở khóa cấp tiếp theo, bạn cần thuộc ít nhất {progress.vocabTarget} từ (trong kho {progress.totalCount}
-            {" "}từ của cấp này) và đạt tối thiểu {Math.round(SKILL_PASS_RATIO * 100)}% ở cả 4 kỹ năng.
+            {" "}từ của cấp này) và đạt tối thiểu {Math.round(SKILL_PASS_RATIO * 100)}% ở cả 5 kỹ năng.
           </p>
 
           <div className="space-y-2 text-left">
@@ -110,7 +116,7 @@ export default function LevelWorkspace({
                 {progress.knownCount}/{progress.vocabTarget} ({Math.round(progress.vocabRatio * 100)}%)
               </span>
             </div>
-            {(["listening", "speaking", "reading", "writing"] as SkillId[]).map((skill) => (
+            {(["listening", "speaking", "reading", "writing", "grammar"] as SkillId[]).map((skill) => (
               <div key={skill} className="flex items-center justify-between rounded-xl border border-brand-100 p-3">
                 <span className="font-medium text-brand-900">{skillLabels[skill]}</span>
                 <span

@@ -5,7 +5,6 @@ import Hero from "./components/Hero";
 import Roadmap from "./components/roadmap/Roadmap";
 import Flashcards from "./components/Flashcards";
 import Quiz from "./components/Quiz";
-import GrammarTips from "./components/GrammarTips";
 import Footer from "./components/Footer";
 import EntryTestPage from "./pages/EntryTestPage";
 import SpeakingRoomPage from "./pages/SpeakingRoomPage";
@@ -176,7 +175,6 @@ function AppContent() {
           />
           <Flashcards knownIds={knownIds} onToggleKnown={handleToggleKnown} />
           <Quiz />
-          <GrammarTips />
         </main>
         <Footer />
       </div>

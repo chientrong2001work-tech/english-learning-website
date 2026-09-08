@@ -58,7 +58,7 @@ export default function LevelGrid({ progress, activeLevel, onSelectLevel }: Leve
               <p className={`text-xs ${isActive ? "text-white/80" : "text-brand-900/50"}`}>
                 Từ vựng: {p.knownCount}/{p.vocabTarget} mục tiêu (kho {p.totalCount} từ)
                 {" · "}
-                {(["listening", "speaking", "reading", "writing"] as const).filter((s) => p.skillsPassed[s]).length}/4 kỹ năng đạt
+                {(["listening", "speaking", "reading", "writing", "grammar"] as const).filter((s) => p.skillsPassed[s]).length}/5 kỹ năng đạt
               </p>
             </div>
           </button>

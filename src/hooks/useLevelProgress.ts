@@ -17,7 +17,7 @@ export const VOCAB_TARGET_BY_LEVEL: Record<CEFRLevel, number> = {
 };
 
 function emptySkillScores(): LevelSkillScores {
-  return { listening: null, speaking: null, reading: null, writing: null };
+  return { listening: null, speaking: null, reading: null, writing: null, grammar: null };
 }
 
 export function createEmptyScores(): LevelScoresMap {
@@ -105,6 +105,7 @@ export function useLevelProgress(knownIds: string[]) {
       speaking: (scores.speaking ?? 0) >= SKILL_PASS_RATIO * 100,
       reading: (scores.reading ?? 0) >= SKILL_PASS_RATIO * 100,
       writing: (scores.writing ?? 0) >= SKILL_PASS_RATIO * 100,
+      grammar: (scores.grammar ?? 0) >= SKILL_PASS_RATIO * 100,
     };
     const allSkillsPassed = Object.values(skillsPassed).every(Boolean);
     const levelPassed = vocabMet && allSkillsPassed;

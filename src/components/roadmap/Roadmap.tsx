@@ -28,8 +28,8 @@ export default function Roadmap({ progress, knownIds, onToggleKnown, onRecordSco
       <div className="mb-10 text-center">
         <h2 className="font-display text-3xl font-bold text-brand-900">Lộ trình học theo trình độ CEFR</h2>
         <p className="mx-auto mt-2 max-w-2xl text-brand-900/60">
-          Chinh phục 6 cấp độ A1 → C2. Ở mỗi cấp, học đủ từ vựng và vượt qua bài kiểm tra 4 kỹ năng Nghe - Nói -
-          Đọc - Viết để mở khóa cấp tiếp theo.
+          Chinh phục 6 cấp độ A1 → C2. Ở mỗi cấp, học đủ từ vựng và ngữ pháp, vượt qua bài kiểm tra 5 kỹ năng Nghe -
+          Nói - Đọc - Viết - Ngữ pháp để mở khóa cấp tiếp theo.
         </p>
       </div>
 
