@@ -1,13 +1,9 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import {
-  type AuthCredential,
   type ConfirmationResult,
   type User,
-  FacebookAuthProvider,
-  GoogleAuthProvider,
   RecaptchaVerifier,
   createUserWithEmailAndPassword,
-  linkWithCredential,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signInWithPhoneNumber,
@@ -79,42 +75,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return unsubscribe;
   }, []);
 
-  // When someone signs in with a provider whose account email is already
-  // linked to a different provider (e.g. they signed up with Google, then
-  // later try Facebook using the same email), Firebase refuses the sign-in
-  // rather than silently creating a second account for the same person.
-  // fetchSignInMethodsForEmail can't tell us which provider that is —
-  // Firebase's email-enumeration protection makes it always return an
-  // empty list — so instead we just try the other social provider we
-  // support (Google<->Facebook, the two this app offers) and link its
-  // credential onto that account. If the email turns out to be registered
-  // via email/password instead, that attempt fails the same way and the
-  // error propagates as-is, telling the user to sign in with that instead.
-  async function signInWithProvider(provider: GoogleAuthProvider | FacebookAuthProvider) {
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (err) {
-      const code = err instanceof Object && "code" in err ? String((err as { code: unknown }).code) : "";
-      if (code !== "auth/account-exists-with-different-credential") throw err;
-
-      const pendingCredential: AuthCredential | null =
-        provider instanceof FacebookAuthProvider
-          ? FacebookAuthProvider.credentialFromError(err as Parameters<typeof FacebookAuthProvider.credentialFromError>[0])
-          : GoogleAuthProvider.credentialFromError(err as Parameters<typeof GoogleAuthProvider.credentialFromError>[0]);
-      if (!pendingCredential) throw err;
-
-      const otherProvider = provider instanceof FacebookAuthProvider ? googleProvider : facebookProvider;
-      const result = await signInWithPopup(auth, otherProvider);
-      await linkWithCredential(result.user, pendingCredential);
-    }
-  }
-
   async function signInWithGoogle() {
-    await signInWithProvider(googleProvider);
+    await signInWithPopup(auth, googleProvider);
   }
 
   async function signInWithFacebook() {
-    await signInWithProvider(facebookProvider);
+    await signInWithPopup(auth, facebookProvider);
   }
 
   async function signInWithEmail(email: string, password: string) {
