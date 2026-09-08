@@ -5,6 +5,19 @@ import { useAuth } from "../../contexts/AuthContext";
 
 const RECAPTCHA_CONTAINER_ID = "recaptcha-container";
 
+// Lets people type their number the way they normally would (0912345678)
+// instead of requiring the international format Firebase's phone auth
+// actually needs (+84912345678). Assumes Vietnamese numbers, since that's
+// this site's audience; a number already in international format (+...)
+// is left untouched.
+function normalizePhoneNumber(raw: string): string {
+  const digits = raw.trim().replace(/[\s.-]/g, "");
+  if (digits.startsWith("+")) return digits;
+  if (digits.startsWith("0")) return `+84${digits.slice(1)}`;
+  if (digits.startsWith("84")) return `+${digits}`;
+  return digits;
+}
+
 function GoogleIcon() {
   return (
     <svg viewBox="0 0 48 48" className="h-5 w-5" aria-hidden="true">
@@ -71,7 +84,7 @@ export default function LoginScreen() {
   function handleSendOtp(e: FormEvent) {
     e.preventDefault();
     runAction(async () => {
-      const result = await sendPhoneCode(phone.trim(), RECAPTCHA_CONTAINER_ID);
+      const result = await sendPhoneCode(normalizePhoneNumber(phone), RECAPTCHA_CONTAINER_ID);
       setConfirmation(result);
     });
   }
@@ -144,11 +157,11 @@ export default function LoginScreen() {
                 required
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="+84912345678"
+                placeholder="0912345678"
                 className="w-full text-sm outline-none"
               />
             </div>
-            <p className="text-xs text-brand-900/40">Nhập số điện thoại theo định dạng quốc tế, có dấu +.</p>
+            <p className="text-xs text-brand-900/40">Nhập số điện thoại của bạn, ví dụ 0912345678.</p>
             <button
               type="submit"
               disabled={busy}
