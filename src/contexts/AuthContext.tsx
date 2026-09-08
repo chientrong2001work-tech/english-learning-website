@@ -30,6 +30,29 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+// Remembers the last uid that passed checkAccess, so a returning user who
+// opens the app offline (no way to re-run the Firestore blocked-list check)
+// gets back into content they were already cleared for, instead of being
+// bounced to the access-denied screen just because the check itself
+// couldn't run. A brand-new sign-in still requires a real, online check.
+const LAST_AUTHORIZED_UID_KEY = "engup-last-authorized-uid";
+
+function rememberAuthorized(uid: string) {
+  try {
+    localStorage.setItem(LAST_AUTHORIZED_UID_KEY, uid);
+  } catch {
+    // ignore write errors (e.g. private browsing storage limits)
+  }
+}
+
+function wasPreviouslyAuthorized(uid: string): boolean {
+  try {
+    return localStorage.getItem(LAST_AUTHORIZED_UID_KEY) === uid;
+  } catch {
+    return false;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,12 +81,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .then(async (ok) => {
           setAuthorized(ok);
           if (ok) {
+            rememberAuthorized(u.uid);
             await recordLogin(u).catch(() => {});
           }
           setIdentitySynced(true);
         })
         .catch(() => {
-          setAuthorized(false);
+          // checkAccess couldn't run at all (most likely offline) — fall
+          // back to whether this account was cleared last time it could.
+          setAuthorized(admin || wasPreviouslyAuthorized(u.uid));
           setIdentitySynced(true);
         })
         .finally(() => setLoading(false));
