@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Ban, CheckCircle2, Loader2, LogOut, Mail, Phone, UserCog } from "lucide-react";
+import { ArrowLeft, Ban, CheckCircle2, ChevronDown, ChevronUp, Loader2, LogOut, Mail, Phone, UserCog } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import {
   blockIdentifier,
@@ -50,6 +50,7 @@ export default function AdminPage() {
   const [error, setError] = useState("");
   const [busyUid, setBusyUid] = useState<string | null>(null);
   const [filter, setFilter] = useState<IdentifierFilter>("all");
+  const [expandedUnlockUid, setExpandedUnlockUid] = useState<string | null>(null);
 
   async function refresh() {
     setLoading(true);
@@ -228,26 +229,43 @@ export default function AdminPage() {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          {levels.map((info) => {
-                            const isUnlocked = row.unlockedLevels.includes(info.id);
-                            return (
-                              <button
-                                key={info.id}
-                                onClick={() => toggleLevelUnlock(row, info.id)}
-                                disabled={busyUid === row.uid}
-                                title={isUnlocked ? `Khóa lại cấp ${info.id}` : `Mở khóa cấp ${info.id}`}
-                                className={`rounded-full px-2.5 py-1 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                                  isUnlocked
-                                    ? "bg-brand-500 text-white hover:bg-brand-600"
-                                    : "bg-brand-50 text-brand-700 hover:bg-brand-100"
-                                }`}
-                              >
-                                {info.id}
-                              </button>
-                            );
-                          })}
-                        </div>
+                        {expandedUnlockUid === row.uid ? (
+                          <div className="flex flex-wrap items-center gap-1">
+                            {levels.map((info) => {
+                              const isUnlocked = row.unlockedLevels.includes(info.id);
+                              return (
+                                <button
+                                  key={info.id}
+                                  onClick={() => toggleLevelUnlock(row, info.id)}
+                                  disabled={busyUid === row.uid}
+                                  title={isUnlocked ? `Khóa lại cấp ${info.id}` : `Mở khóa cấp ${info.id}`}
+                                  className={`rounded-full px-2.5 py-1 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                                    isUnlocked
+                                      ? "bg-brand-500 text-white hover:bg-brand-600"
+                                      : "bg-brand-50 text-brand-700 hover:bg-brand-100"
+                                  }`}
+                                >
+                                  {info.id}
+                                </button>
+                              );
+                            })}
+                            <button
+                              onClick={() => setExpandedUnlockUid(null)}
+                              title="Thu gọn"
+                              className="inline-flex items-center rounded-full p-1 text-brand-900/40 hover:bg-brand-50 hover:text-brand-700"
+                            >
+                              <ChevronUp className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setExpandedUnlockUid(row.uid)}
+                            className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 transition hover:bg-brand-100"
+                          >
+                            {row.unlockedLevels.length}/{levels.length} đã mở
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button
