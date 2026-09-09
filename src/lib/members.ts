@@ -37,6 +37,7 @@ export interface LoginRecord {
   firstLoginAt: Timestamp | null;
   lastLoginAt: Timestamp | null;
   progress: ProgressSummary | null;
+  unlockAllLevels: boolean;
 }
 
 function normalizeEmail(email: string): string {
@@ -100,8 +101,17 @@ export async function listLoginRecords(): Promise<LoginRecord[]> {
       firstLoginAt: data.firstLoginAt ?? null,
       lastLoginAt: data.lastLoginAt ?? null,
       progress: data.progress ?? null,
+      unlockAllLevels: Boolean(data.unlockAllLevels),
     };
   });
+}
+
+// Lets the admin unlock every CEFR level for an account regardless of its
+// actual vocab/skill progress — for themselves, or for any student they
+// choose. Read back by useLevelProgress (via loadUserSettings) on that
+// account's own next login.
+export async function setUnlockAllLevels(uid: string, value: boolean): Promise<void> {
+  await setDoc(doc(db, "users", uid), { unlockAllLevels: value }, { merge: true });
 }
 
 // Called whenever a signed-in learner's local progress (known words, level
@@ -117,14 +127,24 @@ export interface LearningData {
   placementLevel: CEFRLevel | null;
 }
 
+export interface UserSettings {
+  learningData: LearningData | null;
+  unlockAllLevels: boolean;
+}
+
 // The full per-account learning state (which words are known, quiz scores,
-// placement level) — kept separate from the small `progress` summary above
-// so listing every user for the admin panel never has to pull everyone's
-// full word lists. Only loaded for the account that's actually signing in.
-export async function loadLearningData(uid: string): Promise<LearningData | null> {
+// placement level) plus the admin-controlled "unlock every level" flag — kept
+// separate from the small `progress` summary above so listing every user for
+// the admin panel never has to pull everyone's full word lists. Both fields
+// live on the same users/{uid} doc, so one read covers both. Only loaded for
+// the account that's actually signing in.
+export async function loadUserSettings(uid: string): Promise<UserSettings> {
   const snap = await getDoc(doc(db, "users", uid));
-  const data = snap.data()?.learningData;
-  return data ? (data as LearningData) : null;
+  const data = snap.data();
+  return {
+    learningData: (data?.learningData as LearningData | undefined) ?? null,
+    unlockAllLevels: Boolean(data?.unlockAllLevels),
+  };
 }
 
 export async function saveLearningData(uid: string, data: LearningData): Promise<void> {

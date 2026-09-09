@@ -22,10 +22,11 @@ service cloud.firestore {
     }
 
     // Login history, one doc per Firebase Auth UID. A user may only read/write
-    // their own doc (written on every successful login); only the admin can
-    // list everyone's.
+    // their own doc (written on every successful login); the admin can also
+    // list everyone's and write to any of them (used to set unlockAllLevels
+    // on a student's doc from the admin panel).
     match /users/{uid} {
-      allow get, write: if request.auth != null && request.auth.uid == uid;
+      allow get, write: if (request.auth != null && request.auth.uid == uid) || isAdmin();
       allow list: if isAdmin();
     }
   }

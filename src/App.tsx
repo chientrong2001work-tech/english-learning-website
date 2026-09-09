@@ -14,7 +14,7 @@ import LoginScreen from "./components/auth/LoginScreen";
 import AccessDeniedScreen from "./components/auth/AccessDeniedScreen";
 import AdminPage from "./pages/AdminPage";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { loadLearningData, saveLearningData, syncProgress } from "./lib/members";
+import { loadUserSettings, saveLearningData, syncProgress } from "./lib/members";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { createEmptyScores, useLevelProgress } from "./hooks/useLevelProgress";
 import { vocabulary } from "./data/vocabulary";
@@ -31,8 +31,13 @@ function AppContent() {
   const { user, loading, configured, isAdmin, authorized, identitySynced } = useAuth();
   const [route, setRoute] = useState(() => window.location.hash);
   const [knownIds, setKnownIds] = useLocalStorage<string[]>("engup-known-words", []);
-  const { recordScore, progress, placementLevel, applyPlacement, levelScores, applyCloudScores } =
-    useLevelProgress(knownIds);
+  // The admin's own account always has every level unlocked; other accounts
+  // only do if the admin has explicitly unlocked them (loaded below).
+  const [unlockAllLevels, setUnlockAllLevels] = useState(false);
+  const { recordScore, progress, placementLevel, applyPlacement, levelScores, applyCloudScores } = useLevelProgress(
+    knownIds,
+    isAdmin || unlockAllLevels,
+  );
 
   // Each account's learning progress (known words, level scores, placement)
   // lives in Firestore under its own uid, so two different logins on the
@@ -48,21 +53,23 @@ function AppContent() {
     if (!user || !authorized) {
       loadedUidRef.current = null;
       setProgressReady(false);
+      setUnlockAllLevels(false);
       return;
     }
     if (loadedUidRef.current === user.uid) return;
     let cancelled = false;
     setProgressReady(false);
-    loadLearningData(user.uid)
-      .then((data) => {
+    loadUserSettings(user.uid)
+      .then(({ learningData, unlockAllLevels: unlocked }) => {
         if (cancelled) return;
-        if (data) {
-          setKnownIds(data.knownIds);
-          applyCloudScores(data.levelScores, data.placementLevel);
+        if (learningData) {
+          setKnownIds(learningData.knownIds);
+          applyCloudScores(learningData.levelScores, learningData.placementLevel);
         } else {
           setKnownIds([]);
           applyCloudScores(createEmptyScores(), null);
         }
+        setUnlockAllLevels(unlocked);
       })
       .catch(() => {})
       .finally(() => {

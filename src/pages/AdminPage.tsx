@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Ban, CheckCircle2, Loader2, LogOut, Mail, Phone, UserCog } from "lucide-react";
+import { ArrowLeft, Ban, CheckCircle2, Loader2, Unlock, LogOut, Mail, Phone, UserCog } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import {
   blockIdentifier,
   listBlocked,
   listLoginRecords,
+  setUnlockAllLevels,
   unblockIdentifier,
   type BlockedEntry,
   type LoginRecord,
@@ -99,6 +100,19 @@ export default function AdminPage() {
     }
   }
 
+  async function toggleUnlockAll(row: LoginRecord) {
+    setBusyUid(row.uid);
+    setError("");
+    try {
+      await setUnlockAllLevels(row.uid, !row.unlockAllLevels);
+      await refresh();
+    } catch {
+      setError("Không thực hiện được thao tác. Thử lại sau.");
+    } finally {
+      setBusyUid(null);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#f7fbf9]">
       <div className="mx-auto max-w-5xl px-6 py-8">
@@ -171,6 +185,7 @@ export default function AdminPage() {
                   <th className="px-4 py-3">Lần đầu đăng nhập</th>
                   <th className="px-4 py-3">Lần cuối đăng nhập</th>
                   <th className="px-4 py-3">Trạng thái</th>
+                  <th className="px-4 py-3">Mở khóa trình độ</th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
@@ -207,6 +222,20 @@ export default function AdminPage() {
                           </span>
                         )}
                       </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => toggleUnlockAll(row)}
+                          disabled={busyUid === row.uid}
+                          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                            row.unlockAllLevels
+                              ? "bg-brand-500 text-white hover:bg-brand-600"
+                              : "bg-brand-50 text-brand-700 hover:bg-brand-100"
+                          }`}
+                        >
+                          <Unlock className="h-3.5 w-3.5" />
+                          {row.unlockAllLevels ? "Đã mở tất cả — Khóa lại" : "Mở tất cả trình độ"}
+                        </button>
+                      </td>
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => toggleBlock(row)}
@@ -229,8 +258,9 @@ export default function AdminPage() {
         )}
 
         <p className="mt-4 text-xs text-brand-900/40">
-          Chặn một người sẽ ngăn họ đăng nhập ở lần tiếp theo. Nếu họ đang mở sẵn trang web, phiên đăng nhập hiện tại
-          của họ có thể vẫn còn hoạt động cho tới khi họ tải lại trang.
+          Chặn một người sẽ ngăn họ đăng nhập ở lần tiếp theo. "Mở tất cả trình độ" cho phép học viên đó vào học bất
+          kỳ cấp A1-C2 nào ngay lập tức, không cần hoàn thành các cấp trước — tài khoản quản trị của bạn luôn được
+          mở tất cả tự động. Các thay đổi có thể mất một lúc mới hiện ra nếu học viên đang mở sẵn trang web.
         </p>
       </div>
     </div>

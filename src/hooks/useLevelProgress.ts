@@ -50,7 +50,10 @@ export interface LevelProgress {
 // the whole site (topic flashcards, CEFR levels, letter review) — it lives
 // in App.tsx and is passed in here rather than owned by this hook, so this
 // hook's level progress and the navbar's site-wide count never diverge.
-export function useLevelProgress(knownIds: string[]) {
+// `unlockAll` bypasses the normal progression gate (admin's own account, or
+// any student the admin has chosen to unlock) — it only opens navigation to
+// every level, it doesn't fake pass/fail results for them.
+export function useLevelProgress(knownIds: string[], unlockAll = false) {
   const [levelScores, setLevelScores] = useLocalStorage<LevelScoresMap>(
     "engup-level-scores",
     createEmptyScores(),
@@ -109,7 +112,7 @@ export function useLevelProgress(knownIds: string[]) {
     };
     const allSkillsPassed = Object.values(skillsPassed).every(Boolean);
     const levelPassed = vocabMet && allSkillsPassed;
-    const unlocked = previousPassed || index <= placementIndex;
+    const unlocked = unlockAll || previousPassed || index <= placementIndex;
 
     progress.push({
       level: info.id,
