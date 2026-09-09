@@ -10,7 +10,15 @@ import {
 } from "firebase/firestore";
 import type { User } from "firebase/auth";
 import { ADMIN_EMAIL, db } from "./firebase";
+import { levels } from "../data/levels";
 import type { CEFRLevel, LevelScoresMap } from "../types";
+
+const CEFR_LEVEL_IDS = new Set<string>(levels.map((l) => l.id));
+
+function toLevelArray(value: unknown): CEFRLevel[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((v): v is CEFRLevel => typeof v === "string" && CEFR_LEVEL_IDS.has(v));
+}
 
 export interface BlockedEntry {
   id: string;
@@ -37,7 +45,7 @@ export interface LoginRecord {
   firstLoginAt: Timestamp | null;
   lastLoginAt: Timestamp | null;
   progress: ProgressSummary | null;
-  unlockAllLevels: boolean;
+  unlockedLevels: CEFRLevel[];
 }
 
 function normalizeEmail(email: string): string {
@@ -101,17 +109,17 @@ export async function listLoginRecords(): Promise<LoginRecord[]> {
       firstLoginAt: data.firstLoginAt ?? null,
       lastLoginAt: data.lastLoginAt ?? null,
       progress: data.progress ?? null,
-      unlockAllLevels: Boolean(data.unlockAllLevels),
+      unlockedLevels: toLevelArray(data.unlockedLevels),
     };
   });
 }
 
-// Lets the admin unlock every CEFR level for an account regardless of its
-// actual vocab/skill progress — for themselves, or for any student they
-// choose. Read back by useLevelProgress (via loadUserSettings) on that
-// account's own next login.
-export async function setUnlockAllLevels(uid: string, value: boolean): Promise<void> {
-  await setDoc(doc(db, "users", uid), { unlockAllLevels: value }, { merge: true });
+// Lets the admin unlock specific CEFR levels for an account regardless of
+// its actual vocab/skill progress — any combination, for themselves or for
+// any student they choose. Read back by useLevelProgress (via
+// loadUserSettings) on that account's own next login.
+export async function setUnlockedLevels(uid: string, unlockedLevels: CEFRLevel[]): Promise<void> {
+  await setDoc(doc(db, "users", uid), { unlockedLevels }, { merge: true });
 }
 
 // Called whenever a signed-in learner's local progress (known words, level
@@ -129,11 +137,11 @@ export interface LearningData {
 
 export interface UserSettings {
   learningData: LearningData | null;
-  unlockAllLevels: boolean;
+  unlockedLevels: CEFRLevel[];
 }
 
 // The full per-account learning state (which words are known, quiz scores,
-// placement level) plus the admin-controlled "unlock every level" flag — kept
+// placement level) plus the admin-controlled per-level unlock list — kept
 // separate from the small `progress` summary above so listing every user for
 // the admin panel never has to pull everyone's full word lists. Both fields
 // live on the same users/{uid} doc, so one read covers both. Only loaded for
@@ -143,7 +151,7 @@ export async function loadUserSettings(uid: string): Promise<UserSettings> {
   const data = snap.data();
   return {
     learningData: (data?.learningData as LearningData | undefined) ?? null,
-    unlockAllLevels: Boolean(data?.unlockAllLevels),
+    unlockedLevels: toLevelArray(data?.unlockedLevels),
   };
 }
 

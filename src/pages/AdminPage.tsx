@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Ban, CheckCircle2, Loader2, Unlock, LogOut, Mail, Phone, UserCog } from "lucide-react";
+import { ArrowLeft, Ban, CheckCircle2, Loader2, LogOut, Mail, Phone, UserCog } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import {
   blockIdentifier,
   listBlocked,
   listLoginRecords,
-  setUnlockAllLevels,
+  setUnlockedLevels,
   unblockIdentifier,
   type BlockedEntry,
   type LoginRecord,
 } from "../lib/members";
+import { levels } from "../data/levels";
+import type { CEFRLevel } from "../types";
 
 const PROVIDER_LABELS: Record<string, string> = {
   "google.com": "Google",
@@ -100,11 +102,14 @@ export default function AdminPage() {
     }
   }
 
-  async function toggleUnlockAll(row: LoginRecord) {
+  async function toggleLevelUnlock(row: LoginRecord, level: CEFRLevel) {
     setBusyUid(row.uid);
     setError("");
     try {
-      await setUnlockAllLevels(row.uid, !row.unlockAllLevels);
+      const next = row.unlockedLevels.includes(level)
+        ? row.unlockedLevels.filter((l) => l !== level)
+        : [...row.unlockedLevels, level];
+      await setUnlockedLevels(row.uid, next);
       await refresh();
     } catch {
       setError("Không thực hiện được thao tác. Thử lại sau.");
@@ -223,18 +228,26 @@ export default function AdminPage() {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <button
-                          onClick={() => toggleUnlockAll(row)}
-                          disabled={busyUid === row.uid}
-                          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                            row.unlockAllLevels
-                              ? "bg-brand-500 text-white hover:bg-brand-600"
-                              : "bg-brand-50 text-brand-700 hover:bg-brand-100"
-                          }`}
-                        >
-                          <Unlock className="h-3.5 w-3.5" />
-                          {row.unlockAllLevels ? "Đã mở tất cả — Khóa lại" : "Mở tất cả trình độ"}
-                        </button>
+                        <div className="flex flex-wrap gap-1">
+                          {levels.map((info) => {
+                            const isUnlocked = row.unlockedLevels.includes(info.id);
+                            return (
+                              <button
+                                key={info.id}
+                                onClick={() => toggleLevelUnlock(row, info.id)}
+                                disabled={busyUid === row.uid}
+                                title={isUnlocked ? `Khóa lại cấp ${info.id}` : `Mở khóa cấp ${info.id}`}
+                                className={`rounded-full px-2.5 py-1 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                                  isUnlocked
+                                    ? "bg-brand-500 text-white hover:bg-brand-600"
+                                    : "bg-brand-50 text-brand-700 hover:bg-brand-100"
+                                }`}
+                              >
+                                {info.id}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button
@@ -258,9 +271,10 @@ export default function AdminPage() {
         )}
 
         <p className="mt-4 text-xs text-brand-900/40">
-          Chặn một người sẽ ngăn họ đăng nhập ở lần tiếp theo. "Mở tất cả trình độ" cho phép học viên đó vào học bất
-          kỳ cấp A1-C2 nào ngay lập tức, không cần hoàn thành các cấp trước — tài khoản quản trị của bạn luôn được
-          mở tất cả tự động. Các thay đổi có thể mất một lúc mới hiện ra nếu học viên đang mở sẵn trang web.
+          Chặn một người sẽ ngăn họ đăng nhập ở lần tiếp theo. Bấm vào từng cấp (A1-C2) ở cột "Mở khóa trình độ" để
+          mở hoặc khóa lại riêng cấp đó cho học viên — chọn bao nhiêu cấp tùy ý, không cần mở hết một lượt. Tài
+          khoản quản trị của bạn luôn được mở tất cả tự động. Các thay đổi có thể mất một lúc mới hiện ra nếu học
+          viên đang mở sẵn trang web.
         </p>
       </div>
     </div>

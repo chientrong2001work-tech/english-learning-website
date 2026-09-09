@@ -19,9 +19,12 @@ import { useLocalStorage } from "./hooks/useLocalStorage";
 import { createEmptyScores, useLevelProgress } from "./hooks/useLevelProgress";
 import { vocabulary } from "./data/vocabulary";
 import { levelVocabulary } from "./data/levelVocabulary";
+import { levels } from "./data/levels";
+import type { CEFRLevel } from "./types";
 
 const ALL_VOCAB_IDS = new Set([...vocabulary.map((w) => w.id), ...levelVocabulary.map((w) => w.id)]);
 const TOTAL_VOCAB_COUNT = vocabulary.length + levelVocabulary.length;
+const ALL_LEVEL_IDS = levels.map((l) => l.id);
 
 const ENTRY_TEST_ROUTE = "#/kiem-tra-dau-vao";
 const SPEAKING_ROOM_ROUTE = "#/phong-speaking-ao";
@@ -32,11 +35,12 @@ function AppContent() {
   const [route, setRoute] = useState(() => window.location.hash);
   const [knownIds, setKnownIds] = useLocalStorage<string[]>("engup-known-words", []);
   // The admin's own account always has every level unlocked; other accounts
-  // only do if the admin has explicitly unlocked them (loaded below).
-  const [unlockAllLevels, setUnlockAllLevels] = useState(false);
+  // only have whichever specific levels the admin has explicitly unlocked
+  // for them (loaded below).
+  const [unlockedLevels, setUnlockedLevels] = useState<CEFRLevel[]>([]);
   const { recordScore, progress, placementLevel, applyPlacement, levelScores, applyCloudScores } = useLevelProgress(
     knownIds,
-    isAdmin || unlockAllLevels,
+    isAdmin ? ALL_LEVEL_IDS : unlockedLevels,
   );
 
   // Each account's learning progress (known words, level scores, placement)
@@ -53,14 +57,14 @@ function AppContent() {
     if (!user || !authorized) {
       loadedUidRef.current = null;
       setProgressReady(false);
-      setUnlockAllLevels(false);
+      setUnlockedLevels([]);
       return;
     }
     if (loadedUidRef.current === user.uid) return;
     let cancelled = false;
     setProgressReady(false);
     loadUserSettings(user.uid)
-      .then(({ learningData, unlockAllLevels: unlocked }) => {
+      .then(({ learningData, unlockedLevels: unlocked }) => {
         if (cancelled) return;
         if (learningData) {
           setKnownIds(learningData.knownIds);
@@ -69,7 +73,7 @@ function AppContent() {
           setKnownIds([]);
           applyCloudScores(createEmptyScores(), null);
         }
-        setUnlockAllLevels(unlocked);
+        setUnlockedLevels(unlocked);
       })
       .catch(() => {})
       .finally(() => {
